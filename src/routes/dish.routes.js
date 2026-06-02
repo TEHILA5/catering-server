@@ -9,7 +9,7 @@ const {
   updateDishSchema,
   getDishParamSchema,
   categoryQuerySchema
-} = require('../../validations/dish.validation');
+} = require('../validations/dish.validation');
 
 /**
  * GET all dishes
