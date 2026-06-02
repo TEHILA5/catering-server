@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const dishController = require('../contollers/dish.controller');
+const dishController = require('../controllers/dish.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 const { isAdmin } = require('../middlewares/admin.middleware');
 const { validate } = require('../middlewares/validation.middleware');
@@ -9,7 +9,7 @@ const {
   updateDishSchema,
   getDishParamSchema,
   categoryQuerySchema
-} = require('../validations/dish.validation');
+} = require('../../validations/dish.validation');
 
 /**
  * GET all dishes
