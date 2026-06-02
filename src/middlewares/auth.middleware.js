@@ -1,0 +1,20 @@
+const jwt = require('jsonwebtoken');
+const responseHandler = require('../utils/responseHandler');
+
+const verifyToken = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return responseHandler.error(res, 'No token provided', 401);
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return responseHandler.error(res, 'Invalid or expired token', 401);
+  }
+};
+
+module.exports = { verifyToken };
