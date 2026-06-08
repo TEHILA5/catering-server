@@ -56,4 +56,19 @@ const updateOrderValidation = Joi.object({
     })
 });
 
-module.exports = { createOrderValidation, updateOrderValidation };
+const dateRangeValidation = Joi.object({
+  startDate: Joi.date()
+    .required()
+    .messages({
+      'any.required': 'Start date is required',
+      'date.base': 'Start date must be a valid date'
+    }),
+  endDate: Joi.date()
+    .required()
+    .messages({
+      'any.required': 'End date is required',
+      'date.base': 'End date must be a valid date'
+    })
+});
+
+module.exports = { createOrderValidation, updateOrderValidation, dateRangeValidation };

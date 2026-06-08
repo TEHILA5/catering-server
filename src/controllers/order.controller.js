@@ -87,4 +87,36 @@ const getTotalPaymentsByUser = async (req, res) => {
   }
 };
 
-module.exports = { getById, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser };
+const getAverageOrderValue = async (req, res) => {
+  try {
+    const averageOrderValue = await orderService.getAverageOrderValue();
+    return responseHandler.success(res, { averageOrderValue }, 'Average order value retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve average order value', 500);
+  }
+};
+
+const getOrdersByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Validate dates
+    if (!startDate || !endDate) {
+      return responseHandler.error(res, 'Both startDate and endDate are required', 400);
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return responseHandler.error(res, 'Invalid date format. Use valid ISO date strings', 400);
+    }
+
+    const orders = await orderService.getOrdersByDateRange(start, end);
+    return responseHandler.success(res, orders, 'Orders retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve orders by date range', 500);
+  }
+};
+
+module.exports = { getById, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
