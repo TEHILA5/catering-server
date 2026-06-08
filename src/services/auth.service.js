@@ -2,35 +2,14 @@ const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
-/**
- * Register a new user
- * @param {string} fullName - User's full name
- * @param {string} email - User's email address
- * @param {string} password - User's password (plain text)
- * @returns {Promise<{user: Object, token: string}>} User object and JWT token
- * @throws {Error} If email already exists or registration fails
- */
 const register = async (fullName, email, password) => {
-  // Check if email already exists
   const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new Error('Email already in use');
-  }
-
-  // Hash password with bcrypt (10 salt rounds)
+  if (existingUser) throw new Error('Email already in use');
+  
   const hashPassword = await bcrypt.hash(password, 10);
-
-  // Create user
-  const newUser = await User.create({
-    fullName,
-    email,
-    hashPassword
-  });
-
-  // Generate JWT token
+  const newUser = await User.create({ fullName, email, hashPassword });
   const token = generateToken(newUser._id, newUser.role);
-
-  // Return user without hashPassword
+  
   const userResponse = {
     _id: newUser._id,
     fullName: newUser.fullName,
@@ -39,27 +18,32 @@ const register = async (fullName, email, password) => {
     role: newUser.role,
     createdAt: newUser.createdAt
   };
-
   return { user: userResponse, token };
 };
 
-/**
- * Get user profile
- * @param {string} userId - User ID from JWT token
- * @returns {Promise<Object>} User object without hashPassword
- * @throws {Error} If user not found
- */
+const login = async (email, password) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error('Invalid credentials');
+  
+  const isPasswordValid = await bcrypt.compare(password, user.hashPassword);
+  if (!isPasswordValid) throw new Error('Invalid credentials');
+  
+  const token = generateToken(user._id.toString(), user.role);
+  const userResponse = {
+    _id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    createdAt: user.createdAt
+  };
+  return { user: userResponse, token };
+};
+
 const getProfile = async (userId) => {
   const user = await User.findById(userId).select('-hashPassword');
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
+  if (!user) throw new Error('User not found');
   return user;
 };
 
-module.exports = {
-  register,
-  getProfile
-};
+module.exports = { register, login, getProfile };

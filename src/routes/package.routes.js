@@ -2,36 +2,10 @@ const express = require('express');
 const packageController = require('../controllers/package.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 const { isAdmin } = require('../middlewares/admin.middleware');
-const { validatePackage, validatePackageUpdate } = require('../validations/package.validation');
+const { validate } = require('../middlewares/validation.middleware');
+const { packageSchema, updatePackageSchema } = require('../validations/package.validation');
 
 const router = express.Router();
-
-// Validation middleware
-const validateCreatePackage = (req, res, next) => {
-  const { error, value } = validatePackage(req.body);
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.details.map(d => d.message).join(', '),
-      data: null
-    });
-  }
-  req.body = value;
-  next();
-};
-
-const validateUpdatePackage = (req, res, next) => {
-  const { error, value } = validatePackageUpdate(req.body);
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.details.map(d => d.message).join(', '),
-      data: null
-    });
-  }
-  req.body = value;
-  next();
-};
 
 /**
  * Public routes
@@ -48,10 +22,10 @@ router.get('/:id', packageController.getPackageById);
  */
 
 // POST create new package
-router.post('/', verifyToken, isAdmin, validateCreatePackage, packageController.createPackage);
+router.post('/', verifyToken, isAdmin, validate(packageSchema, 'body'), packageController.createPackage);
 
 // PUT update package
-router.put('/:id', verifyToken, isAdmin, validateUpdatePackage, packageController.updatePackage);
+router.put('/:id', verifyToken, isAdmin, validate(updatePackageSchema, 'body'), packageController.updatePackage);
 
 // DELETE package
 router.delete('/:id', verifyToken, isAdmin, packageController.deletePackage);

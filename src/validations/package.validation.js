@@ -38,16 +38,9 @@ const packageSchema = Joi.object({
   })
 });
 
-const validatePackage = (data) => {
-  return packageSchema.validate(data, { abortEarly: false });
-};
-
-const validatePackageUpdate = (data) => {
-  const updateSchema = packageSchema.fork(['packageName', 'pricePerPerson'], schema => schema.optional());
-  return updateSchema.validate(data, { abortEarly: false });
-};
+const updatePackageSchema = packageSchema.fork(['packageName', 'pricePerPerson'], schema => schema.optional());
 
 module.exports = {
-  validatePackage,
-  validatePackageUpdate
+  packageSchema,
+  updatePackageSchema
 };
