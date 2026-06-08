@@ -11,6 +11,16 @@ const getById = async (orderId) => {
   return order;
 };
 
+const getFullOrderDetails = async (orderId) => {
+  const order = await Order.findById(orderId)
+    .populate('userId', 'fullName email phone role')
+    .populate('packageId', 'packageName description pricePerPerson limits')
+    .populate('selectedItems', 'name description category imageUrl');
+
+  if (!order) throw new Error('Order not found');
+  return order;
+};
+
 const getByUserId = async (userId) => {
   const orders = await Order.find({ userId })
     .populate('userId', 'fullName email')

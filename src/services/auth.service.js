@@ -46,4 +46,9 @@ const getProfile = async (userId) => {
   return user;
 };
 
-module.exports = { register, login, getProfile };
+const getAllUsers = async () => {
+  const users = await User.find().select('-hashPassword');
+  return users;
+};
+
+module.exports = { register, login, getProfile, getAllUsers };
