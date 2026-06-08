@@ -34,4 +34,26 @@ const createOrderValidation = Joi.object({
     })
 });
 
-module.exports = { createOrderValidation };
+const updateOrderValidation = Joi.object({
+  eventDate: Joi.date()
+    .optional()
+    .messages({
+      'date.base': 'Event date must be a valid date'
+    }),
+  address: Joi.string()
+    .optional(),
+  totalPrice: Joi.number()
+    .min(0)
+    .optional()
+    .messages({
+      'number.min': 'Total price must be at least 0'
+    }),
+  status: Joi.string()
+    .valid('ממתין לאישור', 'בוצע')
+    .optional()
+    .messages({
+      'any.only': "Status must be either 'ממתין לאישור' or 'בוצע'"
+    })
+});
+
+module.exports = { createOrderValidation, updateOrderValidation };
