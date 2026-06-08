@@ -41,4 +41,50 @@ const createOrder = async (req, res) => {
   }
 };
 
-module.exports = { getById, getByUserId, createOrder };
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.deleteOrder(orderId);
+    return responseHandler.success(res, order, 'Order deleted successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    return responseHandler.error(res, error.message || 'Failed to delete order', 500);
+  }
+};
+
+const updateOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.updateOrder(orderId, req.body);
+    return responseHandler.success(res, order, 'Order updated successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    return responseHandler.error(res, error.message || 'Failed to update order', 500);
+  }
+};
+
+const getOrderCountByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const count = await orderService.getOrderCountByUser(userId);
+    return responseHandler.success(res, { count }, 'Order count retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve order count', 500);
+  }
+};
+
+const getTotalPaymentsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await orderService.getTotalPaymentsByUser(userId);
+    return responseHandler.success(res, result, 'Total payments retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve total payments', 500);
+  }
+};
+
+module.exports = { getById, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser };
