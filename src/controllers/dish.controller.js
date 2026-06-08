@@ -1,29 +1,6 @@
 const dishService = require('../services/dish.service');
 const responseHandler = require('../utils/responseHandler');
 
-/**
- * @swagger
- * /api/dishes:
- *   get:
- *     summary: Get all dishes
- *     description: Retrieve all active dishes. Optional category filter available.
- *     tags:
- *       - Dishes
- *     parameters:
- *       - in: query
- *         name: category
- *         schema:
- *           type: string
- *           enum: [Starters, MainCourses, Salads, Desserts, Breads, Drinks]
- *         description: Filter dishes by category
- *     responses:
- *       200:
- *         description: List of active dishes
- *       400:
- *         description: Invalid query parameters
- *       500:
- *         description: Server error
- */
 const getAllDishes = async (req, res) => {
   try {
     const { category } = req.query;
@@ -34,31 +11,6 @@ const getAllDishes = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /api/dishes/{id}:
- *   get:
- *     summary: Get a single dish
- *     description: Retrieve a dish by ID
- *     tags:
- *       - Dishes
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Dish ID (24-character hex string)
- *     responses:
- *       200:
- *         description: Dish retrieved successfully
- *       400:
- *         description: Invalid dish ID format
- *       404:
- *         description: Dish not found
- *       500:
- *         description: Server error
- */
 const getDishById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -70,51 +22,6 @@ const getDishById = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /api/dishes:
- *   post:
- *     summary: Create a new dish
- *     description: Create a new dish (admin only)
- *     tags:
- *       - Dishes
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - name
- *               - category
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 2
- *                 maxLength: 100
- *               description:
- *                 type: string
- *                 maxLength: 500
- *               category:
- *                 type: string
- *                 enum: [Starters, MainCourses, Salads, Desserts, Breads, Drinks]
- *               imageUrl:
- *                 type: string
- *                 format: uri
- *     responses:
- *       201:
- *         description: Dish created successfully
- *       400:
- *         description: Invalid input data
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (admin only)
- *       500:
- *         description: Server error
- */
 const createDish = async (req, res) => {
   try {
     const dishData = req.body;
@@ -125,57 +32,6 @@ const createDish = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /api/dishes/{id}:
- *   put:
- *     summary: Update a dish
- *     description: Update a dish by ID (admin only)
- *     tags:
- *       - Dishes
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Dish ID (24-character hex string)
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 minLength: 2
- *                 maxLength: 100
- *               description:
- *                 type: string
- *                 maxLength: 500
- *               category:
- *                 type: string
- *                 enum: [Starters, MainCourses, Salads, Desserts, Breads, Drinks]
- *               imageUrl:
- *                 type: string
- *                 format: uri
- *     responses:
- *       200:
- *         description: Dish updated successfully
- *       400:
- *         description: Invalid input data
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (admin only)
- *       404:
- *         description: Dish not found
- *       500:
- *         description: Server error
- */
 const updateDish = async (req, res) => {
   try {
     const { id } = req.params;
@@ -188,37 +44,6 @@ const updateDish = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /api/dishes/{id}:
- *   delete:
- *     summary: Delete a dish
- *     description: Delete a dish by ID (admin only)
- *     tags:
- *       - Dishes
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: Dish ID (24-character hex string)
- *     responses:
- *       200:
- *         description: Dish deleted successfully
- *       400:
- *         description: Invalid dish ID format
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden (admin only)
- *       404:
- *         description: Dish not found
- *       500:
- *         description: Server error
- */
 const deleteDish = async (req, res) => {
   try {
     const { id } = req.params;

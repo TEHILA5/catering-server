@@ -8,7 +8,7 @@ const register = async (fullName, email, password) => {
   
   const hashPassword = await bcrypt.hash(password, 10);
   const newUser = await User.create({ fullName, email, hashPassword });
-  const token = generateToken(newUser._id, newUser.role);
+  const token = generateToken(newUser._id.toString(), newUser.role);
   
   const userResponse = {
     _id: newUser._id,
