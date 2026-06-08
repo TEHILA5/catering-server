@@ -9,7 +9,7 @@ const Dish = require('../models/Dish');
  */
 const getAllDishes = async (category) => {
   try {
-    const filter = { isActive: true };
+    const filter = {};
     
     if (category) {
       filter.category = category;
