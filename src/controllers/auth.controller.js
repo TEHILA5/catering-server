@@ -1,6 +1,7 @@
 const responseHandler = require('../utils/responseHandler');
 const authService = require('../services/auth.service');
 
+// POST /api/auth/register
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -14,6 +15,7 @@ const register = async (req, res) => {
   }
 };
 
+// POST /api/auth/login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -27,6 +29,7 @@ const login = async (req, res) => {
   }
 };
 
+// GET /api/auth/profile
 const getProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -40,6 +43,7 @@ const getProfile = async (req, res) => {
   }
 };
 
+// GET /api/auth/users
 const getAllUsers = async (req, res) => {
   try {
     const users = await authService.getAllUsers();

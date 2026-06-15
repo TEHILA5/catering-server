@@ -1,6 +1,7 @@
 const dishService = require('../services/dish.service');
 const responseHandler = require('../utils/responseHandler');
 
+// GET /api/dishes
 const getAllDishes = async (req, res) => {
   try {
     const { category } = req.query;
@@ -11,6 +12,7 @@ const getAllDishes = async (req, res) => {
   }
 };
 
+// GET /api/dishes/:id
 const getDishById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -22,6 +24,7 @@ const getDishById = async (req, res) => {
   }
 };
 
+// POST /api/dishes
 const createDish = async (req, res) => {
   try {
     const dishData = req.body;
@@ -32,6 +35,7 @@ const createDish = async (req, res) => {
   }
 };
 
+// PUT /api/dishes/:id
 const updateDish = async (req, res) => {
   try {
     const { id } = req.params;
@@ -44,6 +48,7 @@ const updateDish = async (req, res) => {
   }
 };
 
+// DELETE /api/dishes/:id
 const deleteDish = async (req, res) => {
   try {
     const { id } = req.params;

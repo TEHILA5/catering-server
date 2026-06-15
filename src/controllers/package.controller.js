@@ -2,7 +2,8 @@ const packageService = require('../services/package.service');
 const responseHandler = require('../utils/responseHandler');
 
 class PackageController {
-  
+
+  // GET /api/packages
   async getAllPackages(req, res) {
     try {
       const packages = await packageService.getAllPackages();
@@ -12,7 +13,8 @@ class PackageController {
     }
   }
 
-  
+
+  // GET /api/packages/:id
   async getPackageById(req, res) {
     try {
       const { id } = req.params;
@@ -26,7 +28,8 @@ class PackageController {
     }
   }
 
-  
+
+  // POST /api/packages
   async createPackage(req, res) {
     try {
       const packageData = req.body;
@@ -40,7 +43,8 @@ class PackageController {
     }
   }
 
-  
+
+  // PUT /api/packages/:id
   async updatePackage(req, res) {
     try {
       const { id } = req.params;
@@ -58,7 +62,8 @@ class PackageController {
     }
   }
 
-  
+
+  // DELETE /api/packages/:id
   async deletePackage(req, res) {
     try {
       const { id } = req.params;

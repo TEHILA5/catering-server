@@ -1,6 +1,7 @@
 const orderService = require('../services/order.service');
 const responseHandler = require('../utils/responseHandler');
 
+// GET /api/orders/:orderId
 const getById = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -14,6 +15,7 @@ const getById = async (req, res) => {
   }
 };
 
+// GET /api/orders/:orderId/full-details
 const getFullOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -27,6 +29,7 @@ const getFullOrderDetails = async (req, res) => {
   }
 };
 
+// GET /api/orders/user/:userId
 const getByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -37,6 +40,7 @@ const getByUserId = async (req, res) => {
   }
 };
 
+// POST /api/orders
 const createOrder = async (req, res) => {
   try {
     const { userId, packageId, selectedItems, numberOfGuests, eventDate, address } = req.body;
@@ -54,6 +58,7 @@ const createOrder = async (req, res) => {
   }
 };
 
+// DELETE /api/orders/:orderId
 const deleteOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -67,6 +72,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+// PUT /api/orders/:orderId
 const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -80,6 +86,7 @@ const updateOrder = async (req, res) => {
   }
 };
 
+// GET /api/orders/user/:userId/count
 const getOrderCountByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -90,6 +97,7 @@ const getOrderCountByUser = async (req, res) => {
   }
 };
 
+// GET /api/orders/user/:userId/total
 const getTotalPaymentsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -100,6 +108,7 @@ const getTotalPaymentsByUser = async (req, res) => {
   }
 };
 
+// GET /api/orders/stats/average
 const getAverageOrderValue = async (req, res) => {
   try {
     const averageOrderValue = await orderService.getAverageOrderValue();
@@ -109,6 +118,7 @@ const getAverageOrderValue = async (req, res) => {
   }
 };
 
+// GET /api/orders/by-date-range
 const getOrdersByDateRange = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
