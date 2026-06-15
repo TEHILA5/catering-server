@@ -165,3 +165,58 @@ npm test  # Currently placeholder - add test suite as needed
 3. **Adding routes?** Use validation middleware and follow existing patterns
 4. **Database changes?** Update model schema and corresponding service methods
 5. **New middleware?** Place in `middlewares/` folder, document purpose, mount in `app.js` or specific routes
+
+---
+
+## Cursor Cloud specific instructions
+
+### Services
+
+| Service | Required | Notes |
+|---------|----------|-------|
+| MongoDB | Yes | API exits on connection failure |
+| Catering Server API | Yes | `npm run dev` (port 3000) |
+| SMTP / Email | No | Order emails are optional; missing credentials log a startup warning only |
+
+### MongoDB (no systemd in Cloud VM)
+
+Cloud VMs do not use systemd. Start MongoDB manually before the API:
+
+```bash
+mkdir -p /tmp/mongodb-data
+mongod --dbpath /tmp/mongodb-data --bind_ip 127.0.0.1 --port 27017 --fork --logpath /tmp/mongod.log
+```
+
+Verify with: `mongosh --eval "db.runCommand({ ping: 1 })" --quiet`
+
+MongoDB 7 is installed via the official apt repo (jammy package on Ubuntu 24.04).
+
+### Environment
+
+Copy `src/config/.env.example` to `.env` in the project root. Minimum required variables:
+
+- `MONGODB_URI` (default: `mongodb://localhost:27017/catering`)
+- `JWT_SECRET` (required for auth)
+- `JWT_EXPIRES_IN` (e.g. `7d`; used by token generation)
+
+Email variables are optional for API testing.
+
+### Run / test
+
+```bash
+npm run dev          # Start API on http://localhost:3000
+npm test             # Placeholder only (exits 1)
+```
+
+No ESLint or other lint script is configured in this repo.
+
+### Quick API smoke test
+
+```bash
+curl http://localhost:3000/api/health
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"fullName":"Demo User","email":"demo@example.com","password":"Password1"}'
+```
+
+Use a standard email domain (e.g. `@example.com`); Joi may reject some TLDs like `.test`.
