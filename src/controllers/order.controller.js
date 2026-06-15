@@ -29,10 +29,10 @@ const getFullOrderDetails = async (req, res) => {
   }
 };
 
-// GET /api/orders/user/:userId
+// GET /api/orders/user/orders
 const getByUserId = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const orders = await orderService.getByUserId(userId);
     return responseHandler.success(res, orders, 'User orders retrieved successfully', 200);
   } catch (error) {
@@ -43,9 +43,9 @@ const getByUserId = async (req, res) => {
 // POST /api/orders
 const createOrder = async (req, res) => {
   try {
-    const { userId, packageId, selectedItems, numberOfGuests, eventDate, address } = req.body;
+    const { packageId, selectedItems, numberOfGuests, eventDate, address } = req.body;
     const order = await orderService.createOrder({
-      userId,
+      userId: req.user.id,
       packageId,
       selectedItems,
       numberOfGuests,
@@ -86,10 +86,10 @@ const updateOrder = async (req, res) => {
   }
 };
 
-// GET /api/orders/user/:userId/count
+// GET /api/orders/user/count
 const getOrderCountByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const count = await orderService.getOrderCountByUser(userId);
     return responseHandler.success(res, { count }, 'Order count retrieved successfully', 200);
   } catch (error) {
@@ -97,10 +97,10 @@ const getOrderCountByUser = async (req, res) => {
   }
 };
 
-// GET /api/orders/user/:userId/total
+// GET /api/orders/user/total
 const getTotalPaymentsByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
     const result = await orderService.getTotalPaymentsByUser(userId);
     return responseHandler.success(res, result, 'Total payments retrieved successfully', 200);
   } catch (error) {

@@ -1,11 +1,6 @@
 const Joi = require('joi');
 
 const createOrderValidation = Joi.object({
-  userId: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'User ID is required'
-    }),
   packageId: Joi.string()
     .required()
     .messages({
