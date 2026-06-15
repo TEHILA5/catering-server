@@ -7,7 +7,8 @@ const register = async (name, email, password) => {
   if (existingUser) throw new Error('Email already in use');
   
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = await User.create({ name, email, password: hashedPassword });
+  const role = email === process.env.ADMIN_EMAIL ? 'admin' : 'customer';
+  const newUser = await User.create({ name, email, password: hashedPassword, role });
   const token = generateToken(newUser._id.toString(), newUser.role);
   
   const userResponse = {
