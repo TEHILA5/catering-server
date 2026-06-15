@@ -1,9 +1,9 @@
 const Joi = require('joi');
 
 const registerValidation = Joi.object({
-  fullName: Joi.string().trim().required().messages({
-    'string.empty': 'Full name is required',
-    'any.required': 'Full name is required'
+  name: Joi.string().trim().required().messages({
+    'string.empty': 'Name is required',
+    'any.required': 'Name is required'
   }),
   email: Joi.string().email().trim().lowercase().required().messages({
     'string.email': 'Please provide a valid email address',

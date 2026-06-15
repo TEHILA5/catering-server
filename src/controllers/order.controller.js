@@ -26,14 +26,14 @@ const getByUserId = async (req, res) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { userId, packageId, selectedItems, eventDate, address, totalPrice } = req.body;
+    const { userId, packageId, selectedItems, numberOfGuests, eventDate, address } = req.body;
     const order = await orderService.createOrder({
       userId,
       packageId,
       selectedItems,
+      numberOfGuests,
       eventDate,
-      address,
-      totalPrice
+      address
     });
     return responseHandler.success(res, order, 'Order created successfully', 201);
   } catch (error) {

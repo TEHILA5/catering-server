@@ -2,17 +2,17 @@ const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
-const register = async (fullName, email, password) => {
+const register = async (name, email, password) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error('Email already in use');
   
-  const hashPassword = await bcrypt.hash(password, 10);
-  const newUser = await User.create({ fullName, email, hashPassword });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const newUser = await User.create({ name, email, password: hashedPassword });
   const token = generateToken(newUser._id.toString(), newUser.role);
   
   const userResponse = {
     _id: newUser._id,
-    fullName: newUser.fullName,
+    name: newUser.name,
     email: newUser.email,
     phone: newUser.phone,
     role: newUser.role,
@@ -25,13 +25,13 @@ const login = async (email, password) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error('Invalid credentials');
   
-  const isPasswordValid = await bcrypt.compare(password, user.hashPassword);
+  const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) throw new Error('Invalid credentials');
   
   const token = generateToken(user._id.toString(), user.role);
   const userResponse = {
     _id: user._id,
-    fullName: user.fullName,
+    name: user.name,
     email: user.email,
     phone: user.phone,
     role: user.role,
@@ -41,7 +41,7 @@ const login = async (email, password) => {
 };
 
 const getProfile = async (userId) => {
-  const user = await User.findById(userId).select('-hashPassword');
+  const user = await User.findById(userId).select('-password');
   if (!user) throw new Error('User not found');
   return user;
 };

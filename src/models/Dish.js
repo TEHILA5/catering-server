@@ -12,7 +12,7 @@ const dishSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['Starters', 'MainCourses', 'Salads', 'Desserts', 'Breads', 'Drinks'],
+    enum: ['starters', 'mainCourses', 'salads', 'desserts', 'breads', 'drinks'],
     required: true
   },
   imageUrl: {

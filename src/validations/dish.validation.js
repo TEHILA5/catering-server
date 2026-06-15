@@ -19,9 +19,9 @@ const createDishSchema = Joi.object({
     }),
   category: Joi.string()
     .required()
-    .valid('Starters', 'MainCourses', 'Salads', 'Desserts', 'Breads', 'Drinks')
+    .valid('starters', 'mainCourses', 'salads', 'desserts', 'breads', 'drinks')
     .messages({
-      'any.only': 'Category must be one of: Starters, MainCourses, Salads, Desserts, Breads, Drinks',
+      'any.only': 'Category must be one of: starters, mainCourses, salads, desserts, breads, drinks',
       'string.empty': 'Category is required'
     }),
   imageUrl: Joi.string()
@@ -48,9 +48,9 @@ const updateDishSchema = Joi.object({
       'string.max': 'Description cannot exceed 500 characters'
     }),
   category: Joi.string()
-    .valid('Starters', 'MainCourses', 'Salads', 'Desserts', 'Breads', 'Drinks')
+    .valid('starters', 'mainCourses', 'salads', 'desserts', 'breads', 'drinks')
     .messages({
-      'any.only': 'Category must be one of: Starters, MainCourses, Salads, Desserts, Breads, Drinks'
+      'any.only': 'Category must be one of: starters, mainCourses, salads, desserts, breads, drinks'
     }),
   imageUrl: Joi.string()
     .trim()
@@ -75,7 +75,7 @@ const getDishParamSchema = Joi.object({
 
 const categoryQuerySchema = Joi.object({
   category: Joi.string()
-    .valid('Starters', 'MainCourses', 'Salads', 'Desserts', 'Breads', 'Drinks')
+    .valid('starters', 'mainCourses', 'salads', 'desserts', 'breads', 'drinks')
     .messages({
       'any.only': 'Invalid category filter'
     })

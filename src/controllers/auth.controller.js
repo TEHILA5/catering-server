@@ -3,8 +3,8 @@ const authService = require('../services/auth.service');
 
 const register = async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
-    const { user, token } = await authService.register(fullName, email, password);
+    const { name, email, password } = req.body;
+    const { user, token } = await authService.register(name, email, password);
     return responseHandler.success(res, { user, token }, 'User registered successfully', 201);
   } catch (error) {
     if (error.message.includes('Email already in use')) {

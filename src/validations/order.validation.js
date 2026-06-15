@@ -14,6 +14,14 @@ const createOrderValidation = Joi.object({
   selectedItems: Joi.array()
     .items(Joi.string())
     .optional(),
+  numberOfGuests: Joi.number()
+    .integer()
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'Number of guests is required',
+      'number.min': 'Number of guests must be at least 1'
+    }),
   eventDate: Joi.date()
     .required()
     .messages({
@@ -24,13 +32,6 @@ const createOrderValidation = Joi.object({
     .required()
     .messages({
       'any.required': 'Address is required'
-    }),
-  totalPrice: Joi.number()
-    .min(0)
-    .required()
-    .messages({
-      'any.required': 'Total price is required',
-      'number.min': 'Total price must be at least 0'
     })
 });
 
@@ -42,17 +43,17 @@ const updateOrderValidation = Joi.object({
     }),
   address: Joi.string()
     .optional(),
-  totalPrice: Joi.number()
-    .min(0)
+  numberOfGuests: Joi.number()
+    .integer()
+    .min(1)
     .optional()
     .messages({
-      'number.min': 'Total price must be at least 0'
+      'number.min': 'Number of guests must be at least 1'
     }),
-  status: Joi.string()
-    .valid('ממתין לאישור', 'בוצע')
+  isApproved: Joi.boolean()
     .optional()
     .messages({
-      'any.only': "Status must be either 'ממתין לאישור' or 'בוצע'"
+      'boolean.base': 'isApproved must be a boolean value'
     })
 });
 

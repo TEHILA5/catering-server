@@ -1,9 +1,12 @@
 const Order = require('../models/Order');
+const Package = require('../models/Package');
+const Dish = require('../models/Dish');
+const User = require('../models/User');
 const { sendEmail } = require('../config/email.config');
 
 const getById = async (orderId) => {
   const order = await Order.findById(orderId)
-    .populate('userId', 'fullName email')
+    .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
 
@@ -13,7 +16,7 @@ const getById = async (orderId) => {
 
 const getByUserId = async (userId) => {
   const orders = await Order.find({ userId })
-    .populate('userId', 'fullName email')
+    .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
 
@@ -21,9 +24,31 @@ const getByUserId = async (userId) => {
 };
 
 const createOrder = async (data) => {
-  const order = await Order.create(data);
+  const { userId, packageId, selectedItems = [], numberOfGuests, eventDate, address } = data;
+
+  const selectedPackage = await Package.findById(packageId);
+  if (!selectedPackage) throw new Error('Package not found');
+
+  await validateSelectionAgainstLimits(selectedItems, selectedPackage.limits);
+
+  // Price snapshot computed on the server, never trusted from the client.
+  const totalPrice = selectedPackage.pricePerPerson * numberOfGuests;
+
+  const order = await Order.create({
+    userId,
+    packageId,
+    selectedItems,
+    numberOfGuests,
+    eventDate,
+    address,
+    totalPrice
+  });
+
+  // Keep the reverse reference in sync so user orders can be read without a separate query.
+  await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
+
   const populatedOrder = await order.populate([
-    { path: 'userId', select: 'fullName email' },
+    { path: 'userId', select: 'name email' },
     { path: 'packageId', select: 'packageName' },
     { path: 'selectedItems', select: 'name' }
   ]);
@@ -36,15 +61,39 @@ const createOrder = async (data) => {
   return populatedOrder;
 };
 
+const validateSelectionAgainstLimits = async (selectedItemIds, limits) => {
+  if (!selectedItemIds.length) return;
+
+  const dishes = await Dish.find({ _id: { $in: selectedItemIds } });
+  if (dishes.length !== selectedItemIds.length) {
+    throw new Error('One or more selected dishes do not exist');
+  }
+
+  const countByCategory = {};
+  for (const dish of dishes) {
+    countByCategory[dish.category] = (countByCategory[dish.category] || 0) + 1;
+  }
+
+  for (const [category, count] of Object.entries(countByCategory)) {
+    const allowed = limits?.[category] ?? 0;
+    if (count > allowed) {
+      throw new Error(`Selected ${count} items in '${category}' but the package allows only ${allowed}`);
+    }
+  }
+};
+
 const deleteOrder = async (orderId) => {
   const order = await Order.findByIdAndDelete(orderId);
   if (!order) throw new Error('Order not found');
+
+  // Keep the reverse reference in sync.
+  await User.findByIdAndUpdate(order.userId, { $pull: { orders: order._id } });
   return order;
 };
 
 const updateOrder = async (orderId, data) => {
   const order = await Order.findByIdAndUpdate(orderId, data, { new: true })
-    .populate('userId', 'fullName email')
+    .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
 
@@ -79,7 +128,7 @@ const getOrdersByDateRange = async (startDate, endDate) => {
   const orders = await Order.find({
     eventDate: { $gte: startDate, $lte: endDate }
   })
-    .populate('userId', 'fullName email')
+    .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
 
@@ -89,7 +138,7 @@ const getOrdersByDateRange = async (startDate, endDate) => {
 const sendConfirmationEmail = async (order) => {
   try {
     const customerEmail = order.userId.email;
-    const customerName = order.userId.fullName;
+    const customerName = order.userId.name;
     const orderId = order._id.toString();
     const eventDate = new Date(order.eventDate).toLocaleDateString('he-IL');
     const packageName = order.packageId.packageName;

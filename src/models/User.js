@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  fullName: {
+  name: {
     type: String,
     required: true,
     trim: true
@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
-  hashPassword: {
+  password: {
     type: String,
     required: true
   },
@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'customer'],
     default: 'customer'
   },
+  orders: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
   createdAt: {
     type: Date,
     default: Date.now

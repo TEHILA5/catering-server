@@ -150,7 +150,7 @@ npm test  # Currently placeholder - add test suite as needed
 
 ## Important Notes
 
-- **Security:** Passwords hashed with bcrypt, stored as `hashPassword`
+- **Security:** Passwords hashed with bcrypt, stored in the `password` field
 - **User Roles:** `admin` or `customer` (default) - role-based access control in middlewares
 - **Error Messages:** Match error strings to determine HTTP status (e.g., "Email already in use" → 409)
 - **Database:** Uses default collection names (users, dishes, packages)
