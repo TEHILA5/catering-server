@@ -11,6 +11,7 @@ router.get('/user/:userId/count', verifyToken, orderController.getOrderCountByUs
 router.get('/user/:userId/total', verifyToken, orderController.getTotalPaymentsByUser);
 router.get('/stats/average', verifyToken, orderController.getAverageOrderValue);
 router.get('/by-date-range', verifyToken, validate(dateRangeValidation, 'query'), orderController.getOrdersByDateRange);
+router.get('/:orderId/full-details', verifyToken, orderController.getFullOrderDetails);
 
 router.get('/user/:userId', verifyToken, orderController.getByUserId);
 router.get('/:orderId', verifyToken, orderController.getById);

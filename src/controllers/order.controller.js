@@ -14,6 +14,19 @@ const getById = async (req, res) => {
   }
 };
 
+const getFullOrderDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.getFullOrderDetails(orderId);
+    return responseHandler.success(res, order, 'Full order details retrieved successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    return responseHandler.error(res, error.message || 'Failed to retrieve order', 500);
+  }
+};
+
 const getByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
