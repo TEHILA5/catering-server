@@ -15,6 +15,11 @@ const registerValidation = Joi.object({
     'string.empty': 'Password is required',
     'any.required': 'Password is required',
     'string.pattern.base': 'Password must contain at least 1 uppercase letter and 1 number'
+  }),
+  phone: Joi.string().trim().pattern(/^[0-9+\-\s()]{7,15}$/).required().messages({
+    'string.empty': 'Phone number is required',
+    'any.required': 'Phone number is required',
+    'string.pattern.base': 'Please provide a valid phone number'
   })
 });
 

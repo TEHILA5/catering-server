@@ -2,13 +2,13 @@ const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
-const register = async (name, email, password) => {
+const register = async (name, email, password, phone) => {
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error('Email already in use');
   
   const hashedPassword = await bcrypt.hash(password, 10);
   const role = email === process.env.ADMIN_EMAIL ? 'admin' : 'customer';
-  const newUser = await User.create({ name, email, password: hashedPassword, role });
+  const newUser = await User.create({ name, email, password: hashedPassword, phone, role });
   const token = generateToken(newUser._id.toString(), newUser.role);
   
   const userResponse = {
