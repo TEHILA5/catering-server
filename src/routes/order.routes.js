@@ -2,7 +2,7 @@ const express = require('express');
 const orderController = require('../controllers/order.controller');
 const { verifyToken, requireAdmin } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { createOrderValidation, updateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
+const { createOrderValidation, updateOrderValidation, customerUpdateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
 
 const router = express.Router();
 
@@ -21,6 +21,11 @@ router.get('/:orderId', verifyToken, orderController.getById);
 router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderController.createOrder);
 
 router.delete('/:orderId', verifyToken, orderController.deleteOrder);
-router.put('/:orderId', verifyToken, validate(updateOrderValidation, 'body'), orderController.updateOrder);
+
+// Admin: full update including approval status.
+router.put('/:orderId', verifyToken, requireAdmin, validate(updateOrderValidation, 'body'), orderController.updateOrder);
+
+// Customer: edit own pending order (cannot change isApproved).
+router.put('/:orderId/edit', verifyToken, validate(customerUpdateOrderValidation, 'body'), orderController.updateOrderByCustomer);
 
 module.exports = router;

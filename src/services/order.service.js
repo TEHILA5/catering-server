@@ -16,7 +16,7 @@ const getById = async (orderId) => {
 
 const getFullOrderDetails = async (orderId) => {
   const order = await Order.findById(orderId)
-    .populate('userId', 'fullName email phone role')
+    .populate('userId', 'name email phone role')
     .populate('packageId', 'packageName description pricePerPerson limits')
     .populate('selectedItems', 'name description category imageUrl');
 
@@ -119,7 +119,61 @@ const deleteOrder = async (orderId) => {
 };
 
 const updateOrder = async (orderId, data) => {
-  const order = await Order.findByIdAndUpdate(orderId, data, { new: true })
+  const existing = await Order.findById(orderId);
+  if (!existing) throw new Error('Order not found');
+  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+
+  const updateData = { ...data };
+
+  const targetPackageId = data.packageId ?? existing.packageId;
+  const targetGuests = data.numberOfGuests ?? existing.numberOfGuests;
+
+  if (data.packageId || data.selectedItems !== undefined || data.numberOfGuests) {
+    const pkg = await Package.findById(targetPackageId);
+    if (!pkg) throw new Error('Package not found');
+
+    const items = data.selectedItems ?? existing.selectedItems.map((id) => id.toString());
+    if (data.packageId || data.selectedItems !== undefined) {
+      await validateSelectionAgainstLimits(items, pkg.limits);
+    }
+    updateData.totalPrice = pkg.pricePerPerson * targetGuests;
+  }
+
+  const order = await Order.findByIdAndUpdate(orderId, updateData, { new: true })
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .populate('selectedItems', 'name');
+
+  if (!order) throw new Error('Order not found');
+  return order;
+};
+
+// Customer-initiated update: enforces ownership and blocks isApproved changes.
+const updateOrderByCustomer = async (orderId, userId, data) => {
+  const existing = await Order.findById(orderId);
+  if (!existing) throw new Error('Order not found');
+  if (existing.userId.toString() !== userId.toString()) {
+    throw new Error('Unauthorized: you can only edit your own orders');
+  }
+  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+
+  const updateData = { ...data };
+
+  const targetPackageId = data.packageId ?? existing.packageId;
+  const targetGuests = data.numberOfGuests ?? existing.numberOfGuests;
+
+  if (data.packageId || data.selectedItems !== undefined || data.numberOfGuests) {
+    const pkg = await Package.findById(targetPackageId);
+    if (!pkg) throw new Error('Package not found');
+
+    const items = data.selectedItems ?? existing.selectedItems.map((id) => id.toString());
+    if (data.packageId || data.selectedItems !== undefined) {
+      await validateSelectionAgainstLimits(items, pkg.limits);
+    }
+    updateData.totalPrice = pkg.pricePerPerson * targetGuests;
+  }
+
+  const order = await Order.findByIdAndUpdate(orderId, updateData, { new: true })
     .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
@@ -193,4 +247,4 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

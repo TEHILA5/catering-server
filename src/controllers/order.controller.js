@@ -82,7 +82,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
-// PUT /api/orders/:orderId
+// PUT /api/orders/:orderId  (admin only)
 const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -91,6 +91,29 @@ const updateOrder = async (req, res) => {
   } catch (error) {
     if (error.message.includes('Order not found')) {
       return responseHandler.error(res, error.message, 404);
+    }
+    if (error.message.includes('approved')) {
+      return responseHandler.error(res, error.message, 409);
+    }
+    return responseHandler.error(res, error.message || 'Failed to update order', 500);
+  }
+};
+
+// PUT /api/orders/:orderId/edit  (authenticated customer — must own the order)
+const updateOrderByCustomer = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.updateOrderByCustomer(orderId, req.user.id, req.body);
+    return responseHandler.success(res, order, 'Order updated successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    if (error.message.includes('Unauthorized')) {
+      return responseHandler.error(res, error.message, 403);
+    }
+    if (error.message.includes('approved')) {
+      return responseHandler.error(res, error.message, 409);
     }
     return responseHandler.error(res, error.message || 'Failed to update order', 500);
   }
@@ -152,4 +175,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
