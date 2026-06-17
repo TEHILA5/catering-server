@@ -22,10 +22,10 @@ router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderCont
 
 router.delete('/:orderId', verifyToken, orderController.deleteOrder);
 
+// Customer edit must be registered before /:orderId so Express matches the full path.
+router.put('/:orderId/edit', verifyToken, validate(customerUpdateOrderValidation, 'body'), orderController.updateOrderByCustomer);
+
 // Admin: full update including approval status.
 router.put('/:orderId', verifyToken, requireAdmin, validate(updateOrderValidation, 'body'), orderController.updateOrder);
-
-// Customer: edit own pending order (cannot change isApproved).
-router.put('/:orderId/edit', verifyToken, validate(customerUpdateOrderValidation, 'body'), orderController.updateOrderByCustomer);
 
 module.exports = router;
