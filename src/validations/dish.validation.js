@@ -78,6 +78,14 @@ const categoryQuerySchema = Joi.object({
     .valid('starters', 'mainCourses', 'salads', 'desserts', 'breads', 'drinks')
     .messages({
       'any.only': 'Invalid category filter'
+    }),
+  name: Joi.string()
+    .trim()
+    .min(1)
+    .max(100)
+    .messages({
+      'string.min': 'Search term must be at least 1 character',
+      'string.max': 'Search term cannot exceed 100 characters'
     })
 }).unknown(true);
 

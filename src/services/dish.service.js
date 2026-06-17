@@ -1,20 +1,23 @@
 const Dish = require('../models/Dish');
 
 /**
- * Get all dishes with optional category filter
- * Returns only active dishes by default
- * @param {string} category - Optional category filter
- * @returns {Promise<Array>} Array of active dishes
+ * Get all dishes with optional filters
+ * @param {{ category?: string, name?: string }} filters - Optional category and name filters
+ * @returns {Promise<Array>} Array of dishes
  * @throws {Error} Descriptive error message
  */
-const getAllDishes = async (category) => {
+const getAllDishes = async ({ category, name } = {}) => {
   try {
     const filter = {};
-    
+
     if (category) {
       filter.category = category;
     }
-    
+
+    if (name) {
+      filter.name = { $regex: name, $options: 'i' };
+    }
+
     const dishes = await Dish.find(filter).lean();
     return dishes;
   } catch (error) {
