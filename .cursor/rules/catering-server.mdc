@@ -1,0 +1,128 @@
+---
+description: Catering Server — API architecture, patterns, endpoints, and development conventions
+alwaysApply: true
+---
+
+# Catering Server
+
+Node.js/Express REST API for a catering service. MongoDB persistence, JWT auth, role-based access (admin/customer).
+
+**Stack:** Express.js | MongoDB + Mongoose | JWT | Joi validation | Helmet
+
+## Commands & Environment
+
+```bash
+npm install && npm run dev   # default PORT 3000
+npm test                     # placeholder — add tests as needed
+```
+
+Required `.env` variables:
+
+- `MONGODB_URI` — default `mongodb://localhost:27017/catering`
+- `PORT` — default `3000`
+- `JWT_SECRET` — JWT signing secret
+- `NODE_ENV` — `development` or `production`
+
+## Architecture
+
+```
+src/
+├── config/        # DB and service config
+├── controllers/   # Thin HTTP handlers → delegate to services
+├── middlewares/   # auth, validation, error handling
+├── models/        # Mongoose schemas (User, Dish, Package)
+├── routes/        # Route definitions by feature
+├── services/      # Business logic
+├── utils/         # responseHandler, token helpers
+└── validations/   # Joi schemas
+```
+
+**Request flow:** Route → Middleware (validation, auth) → Controller → Service → Model
+
+Each feature (auth, dishes, packages) follows: `routes/` → `controllers/` → `services/` → `models/` + `validations/`
+
+## Development Patterns
+
+### Response handling
+
+Always use `responseHandler`:
+
+```javascript
+const responseHandler = require('../utils/responseHandler');
+responseHandler.success(res, data, message, statusCode);
+responseHandler.error(res, message, statusCode);
+```
+
+### Validation
+
+- Joi schemas in `validations/`
+- Apply via `validate(schema, 'body')` middleware before controller
+
+### Authentication
+
+- Protected routes: `verifyToken` middleware → sets `req.user.id`
+- Admin routes: add `isAdmin` middleware
+
+### Error handling
+
+- Services throw descriptive errors
+- Controllers map to HTTP status (401, 404, 409, 500)
+- Global error handler catches unexpected errors
+
+## Adding a Feature
+
+1. Model → `models/FeatureName.js`
+2. Validation → `validations/feature.validation.js`
+3. Service → `services/feature.service.js` (all business logic here)
+4. Controller → `controllers/feature.controller.js` (thin — no duplicated logic)
+5. Routes → `routes/feature.routes.js`
+6. Mount in `app.js`: `app.use('/api/feature', require('./src/routes/feature.routes'))`
+
+## Adding an Endpoint
+
+1. Add Joi schema to validation file
+2. Implement service method (Mongoose queries live in services only)
+3. Add controller method
+4. Wire route with validation + auth middleware as needed
+
+## API Endpoints
+
+| Route | Methods |
+|-------|---------|
+| `/api/auth` | `POST /register`, `POST /login`, `GET /profile` (auth) |
+| `/api/dishes` | Full CRUD |
+| `/api/packages` | Full CRUD |
+| `/api/health` | `GET` — server status |
+
+## Key Dependencies
+
+| Package | Role |
+|---------|------|
+| express | HTTP framework |
+| mongoose | MongoDB ORM |
+| jsonwebtoken | JWT auth |
+| bcrypt | Password hashing |
+| joi | Request validation |
+| helmet | Security headers |
+| cors | Cross-origin |
+| morgan | Request logging |
+
+## Important Rules
+
+- Passwords: bcrypt-hashed in `password` field — never store plain text
+- Roles: `admin` or `customer` (default) — enforce in middlewares
+- Error strings drive HTTP status (e.g. "Email already in use" → 409)
+- Collections: default names (users, dishes, packages)
+- **Business logic in services only** — controllers stay thin
+- **Schema changes:** update model + corresponding service methods
+- **New middleware:** place in `middlewares/`, mount in `app.js` or route file
+
+## When Modifying Code
+
+| Change | Location |
+|--------|----------|
+| Validation rules | `validations/` |
+| Business logic | `services/` (never controllers) |
+| New routes | Follow existing middleware pattern |
+| DB schema | `models/` + update services |
+| New middleware | `middlewares/` + document purpose |
