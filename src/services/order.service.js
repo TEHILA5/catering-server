@@ -24,6 +24,14 @@ const getFullOrderDetails = async (orderId) => {
   return order;
 };
 
+const getAllOrders = async () => {
+  const orders = await Order.find()
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .sort({ createdAt: -1 });
+  return orders;
+};
+
 const getByUserId = async (userId) => {
   const orders = await Order.find({ userId })
     .populate('userId', 'name email')
@@ -185,4 +193,4 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getById, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

@@ -17,29 +17,29 @@ const packageSchema = Joi.object({
     'number.positive': 'Price per person must be greater than 0'
   }),
   limits: Joi.object({
-    starters: Joi.number().integer().min(0).max(5).messages({
+    starters: Joi.number().integer().min(0).max(10).messages({
       'number.min': 'Starters limit cannot be negative',
-      'number.max': 'Starters limit cannot exceed 5'
+      'number.max': 'Starters limit cannot exceed 10'
     }),
-    mainCourses: Joi.number().integer().min(0).max(4).messages({
+    mainCourses: Joi.number().integer().min(0).max(8).messages({
       'number.min': 'Main courses limit cannot be negative',
-      'number.max': 'Main courses limit cannot exceed 4'
+      'number.max': 'Main courses limit cannot exceed 8'
     }),
-    salads: Joi.number().integer().min(0).max(6).messages({
+    salads: Joi.number().integer().min(0).max(15).messages({
       'number.min': 'Salads limit cannot be negative',
-      'number.max': 'Salads limit cannot exceed 6'
+      'number.max': 'Salads limit cannot exceed 15'
     }),
-    desserts: Joi.number().integer().min(0).max(4).messages({
+    desserts: Joi.number().integer().min(0).max(8).messages({
       'number.min': 'Desserts limit cannot be negative',
-      'number.max': 'Desserts limit cannot exceed 4'
+      'number.max': 'Desserts limit cannot exceed 8'
     }),
-    breads: Joi.number().integer().min(0).max(3).messages({
+    breads: Joi.number().integer().min(0).max(6).messages({
       'number.min': 'Breads limit cannot be negative',
-      'number.max': 'Breads limit cannot exceed 3'
+      'number.max': 'Breads limit cannot exceed 6'
     }),
-    drinks: Joi.number().integer().min(0).max(6).messages({
+    drinks: Joi.number().integer().min(0).max(10).messages({
       'number.min': 'Drinks limit cannot be negative',
-      'number.max': 'Drinks limit cannot exceed 6'
+      'number.max': 'Drinks limit cannot exceed 10'
     })
   }).unknown(true),
   featured: Joi.boolean().messages({

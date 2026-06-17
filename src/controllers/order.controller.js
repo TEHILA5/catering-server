@@ -1,6 +1,16 @@
 const orderService = require('../services/order.service');
 const responseHandler = require('../utils/responseHandler');
 
+// GET /api/orders  (admin only)
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await orderService.getAllOrders();
+    return responseHandler.success(res, orders, 'Orders retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve orders', 500);
+  }
+};
+
 // GET /api/orders/:orderId
 const getById = async (req, res) => {
   try {
@@ -142,4 +152,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

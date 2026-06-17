@@ -24,37 +24,37 @@ const packageSchema = new mongoose.Schema({
       type: Number,
       default: 2,
       min: 0,
-      max: 5
+      max: 10
     },
     mainCourses: {
       type: Number,
       default: 2,
       min: 0,
-      max: 4
+      max: 8
     },
     salads: {
       type: Number,
       default: 3,
       min: 0,
-      max: 6
+      max: 15
     },
     desserts: {
       type: Number,
       default: 2,
       min: 0,
-      max: 4
+      max: 8
     },
     breads: {
       type: Number,
       default: 1,
       min: 0,
-      max: 3
+      max: 6
     },
     drinks: {
       type: Number,
       default: 3,
       min: 0,
-      max: 6
+      max: 10
     }
   },
   featured: {

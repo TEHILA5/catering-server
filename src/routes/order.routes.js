@@ -1,10 +1,13 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
+const { verifyToken, requireAdmin } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
 const { createOrderValidation, updateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
 
 const router = express.Router();
+
+// Admin: all orders
+router.get('/', verifyToken, requireAdmin, orderController.getAllOrders);
 
 // PART 2 routes - must be before /:orderId to avoid route matching conflicts
 router.get('/user/count', verifyToken, orderController.getOrderCountByUser);
