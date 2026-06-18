@@ -17,6 +17,18 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      req.user = jwt.verify(token, process.env.JWT_SECRET);
+    }
+  } catch (error) {
+    // Invalid token on an optional route: treat the caller as anonymous.
+  }
+  next();
+};
+
 const requireAdmin = (req, res, next) => {
   if (req.user?.role !== 'admin') {
     return responseHandler.error(res, 'Access denied: admins only', 403);
@@ -24,4 +36,4 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-module.exports = { verifyToken, requireAdmin };
+module.exports = { verifyToken, optionalAuth, requireAdmin };
