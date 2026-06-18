@@ -24,19 +24,22 @@ const getFullOrderDetails = async (orderId) => {
   return order;
 };
 
-const getAllOrders = async () => {
-  const orders = await Order.find()
-    .populate('userId', 'name email')
-    .populate('packageId', 'packageName')
-    .sort({ createdAt: -1 });
-  return orders;
-};
-
 const getByUserId = async (userId) => {
   const orders = await Order.find({ userId })
     .populate('userId', 'name email')
     .populate('packageId', 'packageName')
-    .populate('selectedItems', 'name');
+    .populate('selectedItems', 'name')
+    .sort({ createdAt: -1 });
+
+  return orders;
+};
+
+const getAllOrders = async () => {
+  const orders = await Order.find()
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .populate('selectedItems', 'name')
+    .sort({ createdAt: -1 });
 
   return orders;
 };

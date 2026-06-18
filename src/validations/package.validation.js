@@ -42,6 +42,9 @@ const packageSchema = Joi.object({
       'number.max': 'Drinks limit cannot exceed 10'
     })
   }).unknown(true),
+  imageUrl: Joi.string().trim().uri().allow('').messages({
+    'string.uri': 'Image URL must be a valid URI'
+  }),
   featured: Joi.boolean().messages({
     'boolean.base': 'Featured must be a boolean value'
   })

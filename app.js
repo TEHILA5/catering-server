@@ -17,6 +17,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// #region agent log
+app.use((req, res, next) => { if (req.originalUrl && req.originalUrl.startsWith('/api/orders')) { try { require('fs').appendFileSync(require('path').join(__dirname, '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'A',location:'app.js:reqlogger',message:'incoming orders request',data:{method:req.method,url:req.originalUrl},timestamp:Date.now()})+'\n'); } catch(e){} } next(); });
+// #endregion
+
 // Routes
 app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/dishes', require('./src/routes/dish.routes'));
@@ -28,6 +32,10 @@ app.use('/api/agent', require('./src/agent/agent.routes'));
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
+
+// #region agent log
+app.use((req, res, next) => { try { require('fs').appendFileSync(require('path').join(__dirname, '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'A',location:'app.js:404',message:'no route matched -> 404',data:{method:req.method,url:req.originalUrl},timestamp:Date.now()})+'\n'); } catch(e){} next(); });
+// #endregion
 
 // Error handling middleware
 app.use((err, req, res, next) => {

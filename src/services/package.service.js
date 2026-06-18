@@ -54,7 +54,7 @@ class PackageService {
       const packageData = await Package.findByIdAndUpdate(
         id,
         updateData,
-        { new: true, runValidators: true }
+        { returnDocument: 'after', runValidators: true }
       );
       if (!packageData) {
         throw new Error('Package not found');

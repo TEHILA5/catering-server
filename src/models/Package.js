@@ -57,6 +57,10 @@ const packageSchema = new mongoose.Schema({
       max: 10
     }
   },
+  imageUrl: {
+    type: String,
+    trim: true
+  },
   featured: {
     type: Boolean,
     default: false

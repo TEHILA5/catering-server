@@ -76,7 +76,7 @@ const updateDish = async (id, dishData) => {
     const dish = await Dish.findByIdAndUpdate(
       id,
       dishData,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     
     if (!dish) {
