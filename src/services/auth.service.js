@@ -74,7 +74,9 @@ const updateProfile = async (userId, updates) => {
 };
 
 const getAllUsers = async () => {
-  const users = await User.find().select('-hashPassword');
+  const users = await User.find({ role: 'customer' })
+    .select('-password')
+    .sort({ createdAt: -1 });
   return users;
 };
 

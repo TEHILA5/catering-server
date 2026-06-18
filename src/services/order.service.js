@@ -34,6 +34,17 @@ const getByUserId = async (userId) => {
   return orders;
 };
 
+// Admin: orders belonging to a specific customer (by user id).
+const getByCustomerId = async (customerId) => {
+  const orders = await Order.find({ userId: customerId })
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .populate('selectedItems', 'name')
+    .sort({ createdAt: -1 });
+
+  return orders;
+};
+
 const getAllOrders = async () => {
   const orders = await Order.find()
     .populate('userId', 'name email')
@@ -250,4 +261,4 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getByCustomerId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
