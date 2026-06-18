@@ -4,8 +4,8 @@ const responseHandler = require('../utils/responseHandler');
 // GET /api/dishes
 const getAllDishes = async (req, res) => {
   try {
-    const { category } = req.query;
-    const dishes = await dishService.getAllDishes(category);
+    const { category, name } = req.query;
+    const dishes = await dishService.getAllDishes({ category, name });
     responseHandler.success(res, dishes, 'Dishes retrieved successfully', 200);
   } catch (error) {
     responseHandler.error(res, error.message, 500);

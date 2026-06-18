@@ -1,11 +1,13 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
-const { verifyToken } = require('../middlewares/auth.middleware');
-const { isAdmin } = require('../middlewares/admin.middleware');
+const { verifyToken, requireAdmin } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { createOrderValidation, updateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
+const { createOrderValidation, updateOrderValidation, customerUpdateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
 
 const router = express.Router();
+
+// Admin: all orders
+router.get('/', verifyToken, requireAdmin, orderController.getAllOrders);
 
 // PART 2 routes - must be before /:orderId to avoid route matching conflicts
 router.get('/user/count', verifyToken, orderController.getOrderCountByUser);
@@ -15,11 +17,15 @@ router.get('/by-date-range', verifyToken, validate(dateRangeValidation, 'query')
 router.get('/:orderId/full-details', verifyToken, orderController.getFullOrderDetails);
 
 router.get('/user/orders', verifyToken, orderController.getByUserId);
-router.get('/', verifyToken, isAdmin, orderController.getAllOrders);
 router.get('/:orderId', verifyToken, orderController.getById);
 router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderController.createOrder);
 
 router.delete('/:orderId', verifyToken, orderController.deleteOrder);
-router.put('/:orderId', verifyToken, validate(updateOrderValidation, 'body'), orderController.updateOrder);
+
+// Customer edit must be registered before /:orderId so Express matches the full path.
+router.put('/:orderId/edit', verifyToken, validate(customerUpdateOrderValidation, 'body'), orderController.updateOrderByCustomer);
+
+// Admin: full update including approval status.
+router.put('/:orderId', verifyToken, requireAdmin, validate(updateOrderValidation, 'body'), orderController.updateOrder);
 
 module.exports = router;

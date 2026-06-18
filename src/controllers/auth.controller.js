@@ -4,8 +4,8 @@ const authService = require('../services/auth.service');
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    const { user, token } = await authService.register(name, email, password);
+    const { name, email, password, phone } = req.body;
+    const { user, token } = await authService.register(name, email, password, phone);
     return responseHandler.success(res, { user, token }, 'User registered successfully', 201);
   } catch (error) {
     if (error.message.includes('Email already in use')) {

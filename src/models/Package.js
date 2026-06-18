@@ -10,6 +10,10 @@ const packageSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  imageUrl: {
+    type: String,
+    trim: true
+  },
   pricePerPerson: {
     type: Number,
     required: true,
@@ -18,27 +22,39 @@ const packageSchema = new mongoose.Schema({
   limits: {
     starters: {
       type: Number,
-      default: 2
+      default: 2,
+      min: 0,
+      max: 10
     },
     mainCourses: {
       type: Number,
-      default: 2
+      default: 2,
+      min: 0,
+      max: 8
     },
     salads: {
       type: Number,
-      default: 10
+      default: 3,
+      min: 0,
+      max: 15
     },
     desserts: {
       type: Number,
-      default: 4
+      default: 2,
+      min: 0,
+      max: 8
     },
     breads: {
       type: Number,
-      default: 2
+      default: 1,
+      min: 0,
+      max: 6
     },
     drinks: {
       type: Number,
-      default: 2
+      default: 3,
+      min: 0,
+      max: 10
     }
   },
   imageUrl: {

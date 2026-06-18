@@ -1,6 +1,16 @@
 const orderService = require('../services/order.service');
 const responseHandler = require('../utils/responseHandler');
 
+// GET /api/orders  (admin only)
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await orderService.getAllOrders();
+    return responseHandler.success(res, orders, 'Orders retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve orders', 500);
+  }
+};
+
 // GET /api/orders/:orderId
 const getById = async (req, res) => {
   try {
@@ -34,25 +44,9 @@ const getByUserId = async (req, res) => {
   try {
     const userId = req.user.id;
     const orders = await orderService.getByUserId(userId);
-    // #region agent log
-    try { require('fs').appendFileSync(require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'D',location:'order.controller.js:getByUserId',message:'user orders returned',data:{count:orders.length,first:orders[0]?{eventDate:orders[0].eventDate,address:orders[0].address,totalPrice:orders[0].totalPrice,packageId:orders[0].packageId}:null},timestamp:Date.now()})+'\n'); } catch(e){}
-    // #endregion
     return responseHandler.success(res, orders, 'User orders retrieved successfully', 200);
   } catch (error) {
     return responseHandler.error(res, error.message || 'Failed to retrieve user orders', 500);
-  }
-};
-
-// GET /api/orders  (admin only) - list all orders
-const getAllOrders = async (req, res) => {
-  try {
-    // #region agent log
-    try { require('fs').appendFileSync(require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'B',location:'order.controller.js:getAllOrders',message:'getAllOrders route reached',data:{userId:req.user&&req.user.id,role:req.user&&req.user.role},timestamp:Date.now()})+'\n'); } catch(e){}
-    // #endregion
-    const orders = await orderService.getAllOrders();
-    return responseHandler.success(res, orders, 'Orders retrieved successfully', 200);
-  } catch (error) {
-    return responseHandler.error(res, error.message || 'Failed to retrieve orders', 500);
   }
 };
 
@@ -88,7 +82,7 @@ const deleteOrder = async (req, res) => {
   }
 };
 
-// PUT /api/orders/:orderId
+// PUT /api/orders/:orderId  (admin only)
 const updateOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -97,6 +91,29 @@ const updateOrder = async (req, res) => {
   } catch (error) {
     if (error.message.includes('Order not found')) {
       return responseHandler.error(res, error.message, 404);
+    }
+    if (error.message.includes('approved')) {
+      return responseHandler.error(res, error.message, 409);
+    }
+    return responseHandler.error(res, error.message || 'Failed to update order', 500);
+  }
+};
+
+// PUT /api/orders/:orderId/edit  (authenticated customer — must own the order)
+const updateOrderByCustomer = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.updateOrderByCustomer(orderId, req.user.id, req.body);
+    return responseHandler.success(res, order, 'Order updated successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    if (error.message.includes('Unauthorized')) {
+      return responseHandler.error(res, error.message, 403);
+    }
+    if (error.message.includes('approved')) {
+      return responseHandler.error(res, error.message, 409);
     }
     return responseHandler.error(res, error.message || 'Failed to update order', 500);
   }
@@ -158,4 +175,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getById, getFullOrderDetails, getByUserId, getAllOrders, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

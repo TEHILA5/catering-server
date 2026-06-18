@@ -31,6 +31,11 @@ const createOrderValidation = Joi.object({
 });
 
 const updateOrderValidation = Joi.object({
+  packageId: Joi.string()
+    .optional(),
+  selectedItems: Joi.array()
+    .items(Joi.string())
+    .optional(),
   eventDate: Joi.date()
     .optional()
     .messages({
@@ -52,6 +57,29 @@ const updateOrderValidation = Joi.object({
     })
 });
 
+// Customers may not change isApproved — only admins can approve orders.
+const customerUpdateOrderValidation = Joi.object({
+  packageId: Joi.string()
+    .optional(),
+  selectedItems: Joi.array()
+    .items(Joi.string())
+    .optional(),
+  eventDate: Joi.date()
+    .optional()
+    .messages({
+      'date.base': 'Event date must be a valid date'
+    }),
+  address: Joi.string()
+    .optional(),
+  numberOfGuests: Joi.number()
+    .integer()
+    .min(1)
+    .optional()
+    .messages({
+      'number.min': 'Number of guests must be at least 1'
+    })
+});
+
 const dateRangeValidation = Joi.object({
   startDate: Joi.date()
     .required()
@@ -67,4 +95,4 @@ const dateRangeValidation = Joi.object({
     })
 });
 
-module.exports = { createOrderValidation, updateOrderValidation, dateRangeValidation };
+module.exports = { createOrderValidation, updateOrderValidation, customerUpdateOrderValidation, dateRangeValidation };

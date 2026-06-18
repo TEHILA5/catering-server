@@ -17,4 +17,11 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const requireAdmin = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return responseHandler.error(res, 'Access denied: admins only', 403);
+  }
+  next();
+};
+
+module.exports = { verifyToken, requireAdmin };

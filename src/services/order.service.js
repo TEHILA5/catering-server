@@ -21,16 +21,6 @@ const getFullOrderDetails = async (orderId) => {
     .populate('selectedItems', 'name description category imageUrl');
 
   if (!order) throw new Error('Order not found');
-  // #region agent log
-  try {
-    const u = order.userId;
-    const rawUser = u && u._id ? await User.findById(u._id).lean() : null;
-    require('fs').appendFileSync(
-      require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-343f7b.log'),
-      JSON.stringify({ sessionId: '343f7b', hypothesisId: 'A,B,D', location: 'order.service.js:getFullOrderDetails', message: 'populated userId structure (keys only, no PII values)', data: { userIdType: typeof u, populatedKeys: u && typeof u === 'object' ? Object.keys(u._doc || u) : null, rawUserKeys: rawUser ? Object.keys(rawUser) : null, populatedNameIsEmpty: !(u && u.name), populatedFullNameIsEmpty: !(u && u.fullName), rawHasNameKey: !!(rawUser && Object.prototype.hasOwnProperty.call(rawUser, 'name')), rawHasFullNameKey: !!(rawUser && Object.prototype.hasOwnProperty.call(rawUser, 'fullName')) }, timestamp: Date.now() }) + '\n'
-    );
-  } catch (e) { /* ignore */ }
-  // #endregion
   return order;
 };
 
@@ -132,7 +122,61 @@ const deleteOrder = async (orderId) => {
 };
 
 const updateOrder = async (orderId, data) => {
-  const order = await Order.findByIdAndUpdate(orderId, data, { returnDocument: 'after' })
+  const existing = await Order.findById(orderId);
+  if (!existing) throw new Error('Order not found');
+  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+
+  const updateData = { ...data };
+
+  const targetPackageId = data.packageId ?? existing.packageId;
+  const targetGuests = data.numberOfGuests ?? existing.numberOfGuests;
+
+  if (data.packageId || data.selectedItems !== undefined || data.numberOfGuests) {
+    const pkg = await Package.findById(targetPackageId);
+    if (!pkg) throw new Error('Package not found');
+
+    const items = data.selectedItems ?? existing.selectedItems.map((id) => id.toString());
+    if (data.packageId || data.selectedItems !== undefined) {
+      await validateSelectionAgainstLimits(items, pkg.limits);
+    }
+    updateData.totalPrice = pkg.pricePerPerson * targetGuests;
+  }
+
+  const order = await Order.findByIdAndUpdate(orderId, updateData, { new: true })
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .populate('selectedItems', 'name');
+
+  if (!order) throw new Error('Order not found');
+  return order;
+};
+
+// Customer-initiated update: enforces ownership and blocks isApproved changes.
+const updateOrderByCustomer = async (orderId, userId, data) => {
+  const existing = await Order.findById(orderId);
+  if (!existing) throw new Error('Order not found');
+  if (existing.userId.toString() !== userId.toString()) {
+    throw new Error('Unauthorized: you can only edit your own orders');
+  }
+  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+
+  const updateData = { ...data };
+
+  const targetPackageId = data.packageId ?? existing.packageId;
+  const targetGuests = data.numberOfGuests ?? existing.numberOfGuests;
+
+  if (data.packageId || data.selectedItems !== undefined || data.numberOfGuests) {
+    const pkg = await Package.findById(targetPackageId);
+    if (!pkg) throw new Error('Package not found');
+
+    const items = data.selectedItems ?? existing.selectedItems.map((id) => id.toString());
+    if (data.packageId || data.selectedItems !== undefined) {
+      await validateSelectionAgainstLimits(items, pkg.limits);
+    }
+    updateData.totalPrice = pkg.pricePerPerson * targetGuests;
+  }
+
+  const order = await Order.findByIdAndUpdate(orderId, updateData, { new: true })
     .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
@@ -206,4 +250,4 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getById, getFullOrderDetails, getByUserId, getAllOrders, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
