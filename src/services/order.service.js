@@ -16,11 +16,21 @@ const getById = async (orderId) => {
 
 const getFullOrderDetails = async (orderId) => {
   const order = await Order.findById(orderId)
-    .populate('userId', 'fullName email phone role')
+    .populate('userId', 'name email phone role')
     .populate('packageId', 'packageName description pricePerPerson limits')
     .populate('selectedItems', 'name description category imageUrl');
 
   if (!order) throw new Error('Order not found');
+  // #region agent log
+  try {
+    const u = order.userId;
+    const rawUser = u && u._id ? await User.findById(u._id).lean() : null;
+    require('fs').appendFileSync(
+      require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-343f7b.log'),
+      JSON.stringify({ sessionId: '343f7b', hypothesisId: 'A,B,D', location: 'order.service.js:getFullOrderDetails', message: 'populated userId structure (keys only, no PII values)', data: { userIdType: typeof u, populatedKeys: u && typeof u === 'object' ? Object.keys(u._doc || u) : null, rawUserKeys: rawUser ? Object.keys(rawUser) : null, populatedNameIsEmpty: !(u && u.name), populatedFullNameIsEmpty: !(u && u.fullName), rawHasNameKey: !!(rawUser && Object.prototype.hasOwnProperty.call(rawUser, 'name')), rawHasFullNameKey: !!(rawUser && Object.prototype.hasOwnProperty.call(rawUser, 'fullName')) }, timestamp: Date.now() }) + '\n'
+    );
+  } catch (e) { /* ignore */ }
+  // #endregion
   return order;
 };
 
@@ -28,7 +38,18 @@ const getByUserId = async (userId) => {
   const orders = await Order.find({ userId })
     .populate('userId', 'name email')
     .populate('packageId', 'packageName')
-    .populate('selectedItems', 'name');
+    .populate('selectedItems', 'name')
+    .sort({ createdAt: -1 });
+
+  return orders;
+};
+
+const getAllOrders = async () => {
+  const orders = await Order.find()
+    .populate('userId', 'name email')
+    .populate('packageId', 'packageName')
+    .populate('selectedItems', 'name')
+    .sort({ createdAt: -1 });
 
   return orders;
 };
@@ -111,7 +132,7 @@ const deleteOrder = async (orderId) => {
 };
 
 const updateOrder = async (orderId, data) => {
-  const order = await Order.findByIdAndUpdate(orderId, data, { new: true })
+  const order = await Order.findByIdAndUpdate(orderId, data, { returnDocument: 'after' })
     .populate('userId', 'name email')
     .populate('packageId', 'packageName')
     .populate('selectedItems', 'name');
@@ -185,4 +206,4 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getById, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getById, getFullOrderDetails, getByUserId, getAllOrders, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

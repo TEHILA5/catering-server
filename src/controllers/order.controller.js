@@ -34,9 +34,25 @@ const getByUserId = async (req, res) => {
   try {
     const userId = req.user.id;
     const orders = await orderService.getByUserId(userId);
+    // #region agent log
+    try { require('fs').appendFileSync(require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'D',location:'order.controller.js:getByUserId',message:'user orders returned',data:{count:orders.length,first:orders[0]?{eventDate:orders[0].eventDate,address:orders[0].address,totalPrice:orders[0].totalPrice,packageId:orders[0].packageId}:null},timestamp:Date.now()})+'\n'); } catch(e){}
+    // #endregion
     return responseHandler.success(res, orders, 'User orders retrieved successfully', 200);
   } catch (error) {
     return responseHandler.error(res, error.message || 'Failed to retrieve user orders', 500);
+  }
+};
+
+// GET /api/orders  (admin only) - list all orders
+const getAllOrders = async (req, res) => {
+  try {
+    // #region agent log
+    try { require('fs').appendFileSync(require('path').join(__dirname, '..', '..', '..', '.cursor', 'debug-5d23e0.log'), JSON.stringify({sessionId:'5d23e0',hypothesisId:'B',location:'order.controller.js:getAllOrders',message:'getAllOrders route reached',data:{userId:req.user&&req.user.id,role:req.user&&req.user.role},timestamp:Date.now()})+'\n'); } catch(e){}
+    // #endregion
+    const orders = await orderService.getAllOrders();
+    return responseHandler.success(res, orders, 'Orders retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve orders', 500);
   }
 };
 
@@ -142,4 +158,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getById, getFullOrderDetails, getByUserId, getAllOrders, createOrder, deleteOrder, updateOrder, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

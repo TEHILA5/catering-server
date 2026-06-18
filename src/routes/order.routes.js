@@ -1,6 +1,7 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
+const { isAdmin } = require('../middlewares/admin.middleware');
 const { validate } = require('../middlewares/validation.middleware');
 const { createOrderValidation, updateOrderValidation, dateRangeValidation } = require('../validations/order.validation');
 
@@ -14,6 +15,7 @@ router.get('/by-date-range', verifyToken, validate(dateRangeValidation, 'query')
 router.get('/:orderId/full-details', verifyToken, orderController.getFullOrderDetails);
 
 router.get('/user/orders', verifyToken, orderController.getByUserId);
+router.get('/', verifyToken, isAdmin, orderController.getAllOrders);
 router.get('/:orderId', verifyToken, orderController.getById);
 router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderController.createOrder);
 
