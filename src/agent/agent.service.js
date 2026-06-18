@@ -1,15 +1,22 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const dishService = require('../services/dish.service');
 const packageService = require('../services/package.service');
+const orderService = require('../services/order.service');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_INSTRUCTION = `אתה עוזר AI של שירות הקייטרינג "קייטרינג המלך".
-תפקידך לעזור ללקוחות לגלות מנות וחבילות קייטרינג, ולענות על כל שאלה הקשורה לשירות.
+תפקידך לעזור ללקוחות לגלות מנות וחבילות קייטרינג, לבצע ולצפות בהזמנות, ולענות על כל שאלה הקשורה לשירות.
 תמיד ענה בעברית, בטון ידידותי, מקצועי ומועיל.
-כשאתה מציג רשימת מנות או חבילות – כתוב משפט פתיחה קצר בלבד. הכרטיסיות יוצגו אוטומטית ללקוח.
+כשאתה מציג רשימת מנות, חבילות או הזמנות – כתוב משפט פתיחה קצר בלבד. הכרטיסיות יוצגו אוטומטית ללקוח.
 גלישה ועיון במנות ובחבילות פתוחים לכולם, גם ללקוחות שאינם מחוברים.
-אם הלקוח מבקש לבצע פעולה אישית או מאובטחת (כגון ביצוע הזמנה, צפייה בפרטים האישיים שלו, עדכון פרטים, או פעולות ניהול) והוא אינו מחובר – אל תבצע את הפעולה, אלא הסבר לו בנימוס שעליו להתחבר לחשבון כדי לבצע אותה.`;
+אם הלקוח מבקש לבצע פעולה אישית או מאובטחת (כגון ביצוע הזמנה, צפייה בהזמנות שלו, עדכון פרטים, או פעולות ניהול) והוא אינו מחובר – אל תבצע את הפעולה, אלא הסבר לו בנימוס שעליו להתחבר לחשבון כדי לבצע אותה.
+
+הנחיות לביצוע הזמנה (createOrder):
+- כדי לבצע הזמנה דרושים: מזהה חבילה (packageId), מספר אורחים (numberOfGuests), תאריך האירוע (eventDate) וכתובת (address).
+- הלקוח בדרך כלל יזכיר שם של חבילה ולא מזהה. במקרה כזה קרא תחילה ל-getPackages, מצא את החבילה התואמת לפי השם, וקח את ה-_id שלה בתור packageId.
+- אם חסר מידע הכרחי (תאריך, מספר אורחים, כתובת או חבילה) – שאל את הלקוח לפני ביצוע ההזמנה. אל תמציא ערכים.
+- המחיר הכולל מחושב אוטומטית על השרת לפי החבילה ומספר האורחים, אין צורך לבקש אותו מהלקוח.`;
 
 const TOOLS = [
   {
@@ -38,19 +45,94 @@ const TOOLS = [
           required: [],
         },
       },
+      {
+        name: 'createOrder',
+        description:
+          'יוצר הזמנת קייטרינג חדשה עבור הלקוח המחובר. דורש התחברות לחשבון. אם הלקוח נקב בשם חבילה ולא במזהה – יש לקרוא קודם ל-getPackages כדי לאתר את ה-_id התואם.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            packageId: {
+              type: 'STRING',
+              description: 'מזהה החבילה (_id) שהלקוח מזמין.',
+            },
+            numberOfGuests: {
+              type: 'NUMBER',
+              description: 'מספר האורחים באירוע (מספר שלם, לפחות 1).',
+            },
+            eventDate: {
+              type: 'STRING',
+              description: 'תאריך האירוע בפורמט ISO (לדוגמה: 2026-08-15).',
+            },
+            address: {
+              type: 'STRING',
+              description: 'כתובת מלאה לאספקת הקייטרינג.',
+            },
+            selectedItems: {
+              type: 'ARRAY',
+              description:
+                'רשימת מזהי מנות (_id) שנבחרו לחבילה. אופציונלי – ניתן להשאיר ריק.',
+              items: { type: 'STRING' },
+            },
+          },
+          required: ['packageId', 'numberOfGuests', 'eventDate', 'address'],
+        },
+      },
+      {
+        name: 'getOrdersByUser',
+        description:
+          'מחזיר את רשימת ההזמנות של הלקוח המחובר. דורש התחברות לחשבון. אין צורך בפרמטרים – הזיהוי נעשה לפי המשתמש המחובר.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {},
+          required: [],
+        },
+      },
     ],
   },
 ];
 
-const executeTool = async (toolName, args) => {
+// כלים הדורשים התחברות לחשבון (פעולות אישיות/מאובטחות).
+const AUTH_REQUIRED_TOOLS = new Set(['createOrder', 'getOrdersByUser']);
+
+const executeTool = async (toolName, args, context = {}) => {
+  // Personal/secure tools must never run for an anonymous caller, even if the
+  // model decided to call them. We hand a structured note back to the model so
+  // it can politely ask the user to log in.
+  if (AUTH_REQUIRED_TOOLS.has(toolName) && !context.userId) {
+    return { error: 'יש להתחבר לחשבון כדי לבצע פעולה זו.' };
+  }
+
   switch (toolName) {
     case 'getDishes':
       return await dishService.getAllDishes(args);
     case 'getPackages':
       return await packageService.getAllPackages();
+    case 'createOrder':
+      return await orderService.createOrder({
+        userId: context.userId,
+        packageId: args.packageId,
+        selectedItems: args.selectedItems || [],
+        numberOfGuests: args.numberOfGuests,
+        eventDate: args.eventDate,
+        address: args.address,
+      });
+    case 'getOrdersByUser':
+      return await orderService.getByUserId(context.userId);
     default:
       throw new Error(`כלי לא מוכר: ${toolName}`);
   }
+};
+
+// קובע האם תוצאת כלי ניתנת להצגה ככרטיסיות בצד הלקוח.
+// מערך מוחזר כמו שהוא; אובייקט בודד עם מזהה (כמו הזמנה שנוצרה) נעטף למערך;
+// תוצאות שגיאה/ריקות אינן מוצגות (אבל עדיין נמסרות למודל כדי שינסח תשובה).
+const toDisplayableArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object' && !data.error && (data._id || data.id)) {
+    return [data];
+  }
+  return null;
 };
 
 // סדר עדיפויות של מודלים: אם הראשון עמוס (503) ננסה את הבא בתור.
@@ -98,9 +180,12 @@ const sendWithFallback = async (systemInstruction, userMessage) => {
  * @returns {{ reply: string, toolResults: Array<{ name: string, data: any[] }> }}
  */
 const chat = async (userMessage, context = {}) => {
-  const authNote = context.isAuthenticated
+  const userId = context.user?.id || null;
+  const isAuthenticated = !!context.isAuthenticated;
+
+  const authNote = isAuthenticated
     ? '\nמצב הלקוח הנוכחי: מחובר לחשבון.'
-    : '\nמצב הלקוח הנוכחי: אינו מחובר. ניתן לעיין במנות ובחבילות, אך פעולות אישיות/מאובטחות דורשות התחברות.';
+    : '\nמצב הלקוח הנוכחי: אינו מחובר. ניתן לעיין במנות ובחבילות, אך פעולות אישיות/מאובטחות (כמו ביצוע הזמנה או צפייה בהזמנות) דורשות התחברות.';
 
   const { chatSession, response: firstResponse } = await sendWithFallback(
     SYSTEM_INSTRUCTION + authNote,
@@ -116,8 +201,15 @@ const chat = async (userMessage, context = {}) => {
   const toolResponseParts = [];
 
   for (const call of functionCalls) {
-    const data = await executeTool(call.name, call.args || {});
-    collectedToolResults.push({ name: call.name, data });
+    const data = await executeTool(call.name, call.args || {}, { userId });
+
+    // Only surface displayable data to the client (arrays / created entities).
+    const displayable = toDisplayableArray(data);
+    if (displayable && displayable.length) {
+      collectedToolResults.push({ name: call.name, data: displayable });
+    }
+
+    // The model always gets the raw result so it can phrase the reply (or relay errors).
     toolResponseParts.push({
       functionResponse: {
         name: call.name,
