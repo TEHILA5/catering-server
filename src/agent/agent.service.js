@@ -3,6 +3,11 @@ const dishService = require('../services/dish.service');
 const packageService = require('../services/package.service');
 const orderService = require('../services/order.service');
 
+if (!process.env.GEMINI_API_KEY) {
+  // Fail loudly at startup rather than producing opaque 500s on the first request.
+  console.error('[Agent] Missing GEMINI_API_KEY in environment (.env). Agent chat will not work.');
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_INSTRUCTION = `אתה עוזר AI של שירות הקייטרינג "קייטרינג המלך".
@@ -140,10 +145,25 @@ const MODEL_FALLBACKS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-fla
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// האם מדובר בשגיאת מכסה/הגבלת קצב (429) מצד Gemini.
+const isQuotaError = (error) => {
+  const msg = error && error.message ? error.message : '';
+  return msg.includes('429') || msg.toLowerCase().includes('quota');
+};
+
+// מכסה יומית שמוצתה (limit: 0 / PerDay) – אין טעם לנסות שוב, זו בעיה ברמת החשבון/חיוב.
+const isDailyQuotaExhausted = (error) => {
+  const msg = error && error.message ? error.message : '';
+  return msg.includes('limit: 0') || msg.includes('PerDay');
+};
+
 // שגיאות שניתן לנסות שוב בעקבותיהן (עומס/זמינות זמנית מצד Google).
+// הגבלת קצב רגעית (429) שווה ניסיון חוזר, אך מכסה יומית שמוצתה – לא.
 const isRetriable = (error) => {
   const msg = error && error.message ? error.message : '';
-  return msg.includes('503') || msg.includes('429') || msg.includes('500');
+  if (msg.includes('503') || msg.includes('500')) return true;
+  if (isQuotaError(error) && !isDailyQuotaExhausted(error)) return true;
+  return false;
 };
 
 /**
@@ -167,7 +187,20 @@ const sendWithFallback = async (systemInstruction, userMessage) => {
         return { chatSession, response: result.response };
       } catch (error) {
         lastError = error;
+        console.error(
+          `[Agent] model "${modelName}" attempt ${attempt + 1} failed:`,
+          error && error.message
+        );
+
+        // This model's daily free-tier quota is spent. Retrying it is pointless,
+        // but a different model in MODEL_FALLBACKS may still have quota – so stop
+        // retrying THIS model and let the outer loop move on to the next one.
+        if (isQuotaError(error) && isDailyQuotaExhausted(error)) break;
+
+        // Genuinely fatal errors (bad API key, malformed request, etc.) won't be
+        // fixed by retrying or by another model – fail fast.
         if (!isRetriable(error)) throw error;
+
         await sleep(1000 * (attempt + 1));
       }
     }
@@ -219,10 +252,7 @@ const chat = async (userMessage, context = {}) => {
   }
 
   const finalResult = await chatSession.sendMessage(toolResponseParts);
-  return {
-    reply: finalResult.response.text(),
-    toolResults: collectedToolResults,
-  };
+  return { reply: finalResult.response.text(), toolResults: collectedToolResults };
 };
 
-module.exports = { chat };
+module.exports = { chat, isQuotaError };
