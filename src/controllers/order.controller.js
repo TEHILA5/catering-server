@@ -50,6 +50,17 @@ const getByUserId = async (req, res) => {
   }
 };
 
+// GET /api/orders/customer/:customerId  (admin only)
+const getOrdersByCustomer = async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const orders = await orderService.getByCustomerId(customerId);
+    return responseHandler.success(res, orders, 'Customer orders retrieved successfully', 200);
+  } catch (error) {
+    return responseHandler.error(res, error.message || 'Failed to retrieve customer orders', 500);
+  }
+};
+
 // POST /api/orders
 const createOrder = async (req, res) => {
   try {
@@ -175,4 +186,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getOrdersByCustomer, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

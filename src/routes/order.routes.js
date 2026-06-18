@@ -17,6 +17,9 @@ router.get('/by-date-range', verifyToken, validate(dateRangeValidation, 'query')
 router.get('/:orderId/full-details', verifyToken, orderController.getFullOrderDetails);
 
 router.get('/user/orders', verifyToken, orderController.getByUserId);
+
+// Admin: orders of a specific customer
+router.get('/customer/:customerId', verifyToken, requireAdmin, orderController.getOrdersByCustomer);
 router.get('/:orderId', verifyToken, orderController.getById);
 router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderController.createOrder);
 

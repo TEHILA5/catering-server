@@ -64,7 +64,7 @@ const updateProfile = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const users = await authService.getAllUsers();
-    return responseHandler.success(res, users, 'All users retrieved successfully', 200);
+    return responseHandler.success(res, users, 'Customers retrieved successfully', 200);
   } catch (error) {
     return responseHandler.error(res, error.message || 'Failed to retrieve users', 500);
   }
