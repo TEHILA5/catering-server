@@ -43,6 +43,23 @@ const getProfile = async (req, res) => {
   }
 };
 
+// PUT /api/auth/profile
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await authService.updateProfile(userId, req.body);
+    return responseHandler.success(res, user, 'Profile updated successfully', 200);
+  } catch (error) {
+    if (error.message.includes('User not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    if (error.message.includes('Email already in use')) {
+      return responseHandler.error(res, error.message, 409);
+    }
+    return responseHandler.error(res, error.message || 'Failed to update profile', 500);
+  }
+};
+
 // GET /api/auth/users
 const getAllUsers = async (req, res) => {
   try {
@@ -53,4 +70,4 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, getAllUsers };
+module.exports = { register, login, getProfile, updateProfile, getAllUsers };

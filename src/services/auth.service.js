@@ -47,9 +47,35 @@ const getProfile = async (userId) => {
   return user;
 };
 
+const updateProfile = async (userId, updates) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  if (updates.email && updates.email !== user.email) {
+    const existingUser = await User.findOne({ email: updates.email });
+    if (existingUser) throw new Error('Email already in use');
+    user.email = updates.email;
+  }
+
+  if (updates.name !== undefined) user.name = updates.name;
+  if (updates.phone !== undefined) user.phone = updates.phone;
+
+  await user.save();
+
+  const userResponse = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    createdAt: user.createdAt
+  };
+  return userResponse;
+};
+
 const getAllUsers = async () => {
   const users = await User.find().select('-hashPassword');
   return users;
 };
 
-module.exports = { register, login, getProfile, getAllUsers };
+module.exports = { register, login, getProfile, updateProfile, getAllUsers };

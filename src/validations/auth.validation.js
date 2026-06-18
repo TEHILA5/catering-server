@@ -23,6 +23,22 @@ const registerValidation = Joi.object({
   })
 });
 
+const updateProfileValidation = Joi.object({
+  name: Joi.string().trim().messages({
+    'string.empty': 'Name cannot be empty'
+  }),
+  email: Joi.string().email().trim().lowercase().messages({
+    'string.email': 'Please provide a valid email address',
+    'string.empty': 'Email cannot be empty'
+  }),
+  phone: Joi.string().trim().pattern(/^[0-9+\-\s()]{7,15}$/).messages({
+    'string.empty': 'Phone number cannot be empty',
+    'string.pattern.base': 'Please provide a valid phone number'
+  })
+}).min(1).messages({
+  'object.min': 'At least one field is required to update'
+});
+
 const loginValidation = Joi.object({
   email: Joi.string().email().trim().lowercase().required().messages({
     'string.email': 'Email must be a valid email format',
@@ -34,4 +50,4 @@ const loginValidation = Joi.object({
   })
 });
 
-module.exports = { registerValidation, loginValidation };
+module.exports = { registerValidation, loginValidation, updateProfileValidation };
