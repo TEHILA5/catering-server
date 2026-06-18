@@ -16,7 +16,20 @@ const chat = async (req, res) => {
 
     responseHandler.success(res, { reply, toolResults });
   } catch (error) {
-    console.error('[Agent] Error:', error.message);
+    // Log the full error (including stack) so the real cause is visible in the terminal.
+    console.error('[Agent] chat failed:', error);
+
+    // Gemini quota / rate-limit errors are an upstream availability problem, not a
+    // bug in our request handling. Surface them as 429 with an honest message so the
+    // client (and we) can tell them apart from genuine server faults.
+    if (agentService.isQuotaError(error)) {
+      return responseHandler.error(
+        res,
+        'שירות ה-AI חרג כרגע ממכסת השימוש (Gemini). נסה שוב מאוחר יותר.',
+        429
+      );
+    }
+
     responseHandler.error(res, 'שגיאה בשירות הסוכן. נסה שוב מאוחר יותר.', 500);
   }
 };
