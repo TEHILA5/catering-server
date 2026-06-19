@@ -167,10 +167,56 @@ const isRetriable = (error) => {
 };
 
 /**
+ * ממיר היסטוריית שיחה שהגיעה מהלקוח לפורמט שמצפה לו Gemini.
+ * הלקוח שולח מערך תורות בפורמט ידידותי: { role: 'user' | 'model', text: string }
+ * (גם { content } או { parts } נתמכים), ואנו ממירים ל-{ role, parts: [{ text }] }.
+ *
+ * אילוצי Gemini שאנו אוכפים כאן:
+ * - role חייב להיות 'user' או 'model' בלבד.
+ * - תורות ריקות (ללא טקסט) מסוננות.
+ * - ההיסטוריה חייבת להתחיל בתור של 'user' – לכן תורות 'model' מובילות נזרקות.
+ *
+ * ההיסטוריה אמורה לכלול את כל התורות הקודמים אך *לא* את ההודעה החדשה הנוכחית
+ * (היא נשלחת בנפרד דרך sendMessage).
+ */
+const normalizeHistory = (history) => {
+  if (!Array.isArray(history)) return [];
+
+  const normalized = [];
+  for (const turn of history) {
+    if (!turn || typeof turn !== 'object') continue;
+
+    const role = turn.role === 'model' ? 'model' : turn.role === 'user' ? 'user' : null;
+    if (!role) continue;
+
+    let text = '';
+    if (typeof turn.text === 'string') {
+      text = turn.text;
+    } else if (typeof turn.content === 'string') {
+      text = turn.content;
+    } else if (Array.isArray(turn.parts)) {
+      text = turn.parts.map((p) => (p && typeof p.text === 'string' ? p.text : '')).join('');
+    }
+
+    text = text.trim();
+    if (!text) continue;
+
+    normalized.push({ role, parts: [{ text }] });
+  }
+
+  // Gemini דורש שההיסטוריה תתחיל בתור 'user'. נשמיט תורות 'model' מובילות.
+  while (normalized.length && normalized[0].role === 'model') {
+    normalized.shift();
+  }
+
+  return normalized;
+};
+
+/**
  * שולח הודעה למודל עם ניסיונות חוזרים וגיבוי בין מודלים.
  * @returns {Promise<import('@google/generative-ai').ChatSession>}
  */
-const sendWithFallback = async (systemInstruction, userMessage) => {
+const sendWithFallback = async (systemInstruction, userMessage, history = []) => {
   let lastError;
 
   for (const modelName of MODEL_FALLBACKS) {
@@ -182,7 +228,11 @@ const sendWithFallback = async (systemInstruction, userMessage) => {
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const chatSession = model.startChat({ history: [] });
+        // Seed the session with the full prior conversation so the model
+        // "remembers" earlier details (package, guests, date, address) instead
+        // of re-asking. Previously this was always `history: []`, which is what
+        // made every turn behave like a brand-new conversation.
+        const chatSession = model.startChat({ history });
         const result = await chatSession.sendMessage(userMessage);
         return { chatSession, response: result.response };
       } catch (error) {
@@ -210,11 +260,15 @@ const sendWithFallback = async (systemInstruction, userMessage) => {
 };
 
 /**
+ * @param {string} userMessage ההודעה החדשה מהלקוח.
+ * @param {object} context הקשר הבקשה (משתמש מחובר, היסטוריית שיחה).
+ * @param {Array} [context.history] כל התורות הקודמים בשיחה (ללא ההודעה הנוכחית).
  * @returns {{ reply: string, toolResults: Array<{ name: string, data: any[] }> }}
  */
 const chat = async (userMessage, context = {}) => {
   const userId = context.user?.id || null;
   const isAuthenticated = !!context.isAuthenticated;
+  const history = normalizeHistory(context.history);
 
   const authNote = isAuthenticated
     ? '\nמצב הלקוח הנוכחי: מחובר לחשבון.'
@@ -222,7 +276,8 @@ const chat = async (userMessage, context = {}) => {
 
   const { chatSession, response: firstResponse } = await sendWithFallback(
     SYSTEM_INSTRUCTION + authNote,
-    userMessage
+    userMessage,
+    history
   );
   const functionCalls = firstResponse.functionCalls();
 
