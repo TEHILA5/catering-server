@@ -147,7 +147,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // האם מדובר בשגיאת מכסה/הגבלת קצב (429) מצד Gemini.
 const isQuotaError = (error) => {
-  const msg = error && error.message ? error.message : '';
+  if (!error) return false;
+  if (error.status === 429) return true;
+  const msg = error.message ? error.message : String(error);
   return msg.includes('429') || msg.toLowerCase().includes('quota');
 };
 
