@@ -15,13 +15,13 @@ const chat = async (req, res) => {
       return responseHandler.error(res, 'history חייב להיות מערך', 400);
     }
 
-    const { reply, toolResults } = await agentService.chat(message.trim(), {
+    const { reply, toolResults, historyTurns } = await agentService.chat(message.trim(), {
       isAuthenticated: !!req.user,
       user: req.user || null,
       history: history || [],
     });
 
-    responseHandler.success(res, { reply, toolResults });
+    responseHandler.success(res, { reply, toolResults, historyTurns });
   } catch (error) {
     // Log the full error (including stack) so the real cause is visible in the terminal.
     console.error('[Agent] chat failed:', error);
