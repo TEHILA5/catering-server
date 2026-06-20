@@ -3,15 +3,22 @@ const responseHandler = require('../utils/responseHandler');
 
 const chat = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, history } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return responseHandler.error(res, 'נדרשת הודעה', 400);
     }
 
+    // history = כל התורות הקודמים בשיחה שהלקוח שומר ושולח בכל בקשה.
+    // חייב להיות מערך; אם הגיע משהו אחר נתעלם ממנו (השירות גם מנרמל בעצמו).
+    if (history !== undefined && !Array.isArray(history)) {
+      return responseHandler.error(res, 'history חייב להיות מערך', 400);
+    }
+
     const { reply, toolResults } = await agentService.chat(message.trim(), {
       isAuthenticated: !!req.user,
       user: req.user || null,
+      history: history || [],
     });
 
     responseHandler.success(res, { reply, toolResults });
