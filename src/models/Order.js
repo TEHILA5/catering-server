@@ -11,6 +11,16 @@ const orderSchema = new mongoose.Schema({
   // Kept on the order so it stays accurate even if the package price changes later.
   totalPrice: { type: Number, required: true },
   isApproved: { type: Boolean, default: false },
+  // Payment lifecycle. Starts pending; flips to "בוצע" ONLY after PayPal confirms
+  // a successful server-side capture (never trusted from the frontend).
+  paymentStatus: {
+    type: String,
+    enum: ['ממתין לאישור', 'בוצע'],
+    default: 'ממתין לאישור'
+  },
+  // PayPal references kept for traceability / reconciliation.
+  paypalOrderId: { type: String },
+  paypalCaptureId: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
