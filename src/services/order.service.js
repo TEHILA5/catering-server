@@ -61,6 +61,9 @@ const createOrder = async (data) => {
   const selectedPackage = await Package.findById(packageId);
   if (!selectedPackage) throw new Error('Package not found');
 
+  // Never trust the client: reject any event date that has already passed.
+  ensureEventDateNotInPast(eventDate);
+
   await validateSelectionAgainstLimits(selectedItems, selectedPackage.limits);
 
   // Price snapshot computed on the server, never trusted from the client.
@@ -100,6 +103,24 @@ const createOrder = async (data) => {
   ]);
 
   return populatedOrder;
+};
+
+// Rejects an event date that falls before today (comparison is date-only, time ignored).
+const ensureEventDateNotInPast = (eventDate) => {
+  const parsed = new Date(eventDate);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('תאריך האירוע אינו תקין');
+  }
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const startOfEventDate = new Date(parsed);
+  startOfEventDate.setHours(0, 0, 0, 0);
+
+  if (startOfEventDate < startOfToday) {
+    throw new Error('לא ניתן לבחור תאריך שעבר');
+  }
 };
 
 const validateSelectionAgainstLimits = async (selectedItemIds, limits) => {
