@@ -130,6 +130,21 @@ const updateOrderByCustomer = async (req, res) => {
   }
 };
 
+// PATCH /api/orders/:orderId/confirm-payment  (admin only)
+// Manually marks an order as paid (cash / bank transfer) — no PayPal involved.
+const confirmPayment = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await orderService.markOrderConfirmed(orderId);
+    return responseHandler.success(res, order, 'Payment confirmed successfully', 200);
+  } catch (error) {
+    if (error.message.includes('Order not found')) {
+      return responseHandler.error(res, error.message, 404);
+    }
+    return responseHandler.error(res, error.message || 'Failed to confirm payment', 500);
+  }
+};
+
 // GET /api/orders/user/count
 const getOrderCountByUser = async (req, res) => {
   try {
@@ -186,4 +201,4 @@ const getOrdersByDateRange = async (req, res) => {
   }
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getOrdersByCustomer, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getOrdersByCustomer, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, confirmPayment, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };

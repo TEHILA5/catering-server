@@ -4,6 +4,11 @@ const Dish = require('../models/Dish');
 const User = require('../models/User');
 const { sendEmail } = require('../config/email.config');
 
+// Canonical order statuses. These are the single source of truth shared across
+// the order service, the PayPal capture flow and the admin confirm-payment flow.
+const ORDER_STATUS_PENDING = 'ממתין לתשלום';
+const ORDER_STATUS_APPROVED = 'מאושר';
+
 const getById = async (orderId) => {
   const order = await Order.findById(orderId)
     .populate('userId', 'name email')
@@ -82,18 +87,19 @@ const createOrder = async (data) => {
   // Keep the reverse reference in sync so user orders can be read without a separate query.
   await User.findByIdAndUpdate(userId, { $push: { orders: order._id } });
 
-  // Send a confirmation email to the customer. A failure here must never fail order creation.
+  // Notify the customer that the order was received and is awaiting payment.
+  // A failure here must never fail order creation.
   try {
     const user = await User.findById(userId).select('name email');
     if (user?.email) {
       await sendEmail({
         to: user.email,
-        subject: `אישור הזמנה - מספר ${order._id}`,
-        html: buildOrderConfirmationHtml(order, user.name)
+        subject: `ההזמנה שלך התקבלת - מספר ${order._id}`,
+        html: buildOrderCreatedHtml(order, user.name, selectedPackage.packageName)
       });
     }
   } catch (error) {
-    console.error('✗ Failed to send order confirmation email:', error.message);
+    console.error('✗ Failed to send order-created email:', error.message);
   }
 
   const populatedOrder = await order.populate([
@@ -156,7 +162,9 @@ const deleteOrder = async (orderId) => {
 const updateOrder = async (orderId, data) => {
   const existing = await Order.findById(orderId);
   if (!existing) throw new Error('Order not found');
-  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+  if (existing.paymentStatus === ORDER_STATUS_APPROVED) {
+    throw new Error('Cannot edit an order that has already been approved');
+  }
 
   const updateData = { ...data };
 
@@ -183,14 +191,16 @@ const updateOrder = async (orderId, data) => {
   return order;
 };
 
-// Customer-initiated update: enforces ownership and blocks isApproved changes.
+// Customer-initiated update: enforces ownership; cannot change payment status.
 const updateOrderByCustomer = async (orderId, userId, data) => {
   const existing = await Order.findById(orderId);
   if (!existing) throw new Error('Order not found');
   if (existing.userId.toString() !== userId.toString()) {
     throw new Error('Unauthorized: you can only edit your own orders');
   }
-  if (existing.isApproved) throw new Error('Cannot edit an order that has already been approved');
+  if (existing.paymentStatus === ORDER_STATUS_APPROVED) {
+    throw new Error('Cannot edit an order that has already been approved');
+  }
 
   const updateData = { ...data };
 
@@ -251,30 +261,80 @@ const getOrdersByDateRange = async (startDate, endDate) => {
   return orders;
 };
 
-// Builds the styled Hebrew (RTL) HTML body for the order confirmation email.
-const buildOrderConfirmationHtml = (order, customerName) => {
-  const eventDate = new Date(order.eventDate).toLocaleDateString('he-IL');
-  // The Order schema tracks approval via `isApproved`; surface it as a readable status.
-  const status = order.isApproved ? 'מאושרת' : 'ממתינה לאישור';
+// Marks an order as confirmed ("מאושר"). This is the single shared place that
+// flips an order to confirmed and notifies the customer, so the logic is not
+// duplicated between the PayPal capture flow and the admin manual-confirm flow.
+//
+// @param {string} orderId          our internal Order _id
+// @param {object} [opts]
+// @param {string} [opts.paypalCaptureId]  set when confirmation came from PayPal
+// @returns {Promise<object>}        the populated, confirmed order
+const markOrderConfirmed = async (orderId, { paypalCaptureId } = {}) => {
+  const order = await Order.findById(orderId);
+  if (!order) throw new Error('Order not found');
 
+  // Idempotent: if it was already confirmed, don't send the email a second time.
+  const alreadyConfirmed = order.paymentStatus === ORDER_STATUS_APPROVED;
+
+  order.paymentStatus = ORDER_STATUS_APPROVED;
+  if (paypalCaptureId) order.paypalCaptureId = paypalCaptureId;
+  await order.save();
+
+  const populatedOrder = await order.populate([
+    { path: 'userId', select: 'name email' },
+    { path: 'packageId', select: 'packageName' },
+    { path: 'selectedItems', select: 'name' }
+  ]);
+
+  // Notify the customer that payment was received. A failed email must never
+  // block the status update or the payment flow.
+  if (!alreadyConfirmed) {
+    try {
+      const customer = populatedOrder.userId;
+      if (customer?.email) {
+        await sendEmail({
+          to: customer.email,
+          subject: `ההזמנה שלך אושרה! - מספר ${order._id}`,
+          html: buildOrderConfirmedHtml(populatedOrder, customer.name, populatedOrder.packageId?.packageName)
+        });
+      }
+    } catch (error) {
+      console.error('✗ Failed to send order-confirmed email:', error.message);
+    }
+  }
+
+  return populatedOrder;
+};
+
+// Shared, styled Hebrew (RTL) order-summary block reused by both emails.
+const buildOrderSummaryBlock = (order, packageName) => {
+  const eventDate = new Date(order.eventDate).toLocaleDateString('he-IL');
+
+  return `
+        <div style="background-color: #f9f9f9; padding: 20px; border-right: 4px solid #4CAF50; margin-bottom: 20px;">
+          <p style="margin: 10px 0;"><strong>מספר הזמנה:</strong> ${order._id}</p>
+          ${packageName ? `<p style="margin: 10px 0;"><strong>חבילה:</strong> ${packageName}</p>` : ''}
+          <p style="margin: 10px 0;"><strong>תאריך האירוע:</strong> ${eventDate}</p>
+          <p style="margin: 10px 0;"><strong>כתובת:</strong> ${order.address}</p>
+          <p style="margin: 10px 0;"><strong>מספר אורחים:</strong> ${order.numberOfGuests}</p>
+          <p style="margin: 10px 0;"><strong>מחיר כולל:</strong> ₪${order.totalPrice}</p>
+        </div>`;
+};
+
+// Email sent immediately after an order is created — payment still pending.
+const buildOrderCreatedHtml = (order, customerName, packageName) => {
   return `
     <div style="direction: rtl; font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
       <div style="background-color: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333; text-align: center; margin-bottom: 30px;">אישור הזמנה</h2>
+        <h2 style="color: #333; text-align: center; margin-bottom: 30px;">ההזמנה שלך התקבלה</h2>
 
         <p style="color: #555; font-size: 16px; margin-bottom: 20px;">שלום <strong>${customerName}</strong>,</p>
 
-        <p style="color: #555; font-size: 16px; margin-bottom: 30px;">תודה על הזמנתך! הנה פרטי ההזמנה:</p>
-
-        <div style="background-color: #f9f9f9; padding: 20px; border-right: 4px solid #4CAF50; margin-bottom: 20px;">
-          <p style="margin: 10px 0;"><strong>מספר הזמנה:</strong> ${order._id}</p>
-          <p style="margin: 10px 0;"><strong>תאריך האירוע:</strong> ${eventDate}</p>
-          <p style="margin: 10px 0;"><strong>כתובת:</strong> ${order.address}</p>
-          <p style="margin: 10px 0;"><strong>מחיר כולל:</strong> ₪${order.totalPrice}</p>
-          <p style="margin: 10px 0;"><strong>סטטוס:</strong> ${status}</p>
-        </div>
-
-        <p style="color: #555; font-size: 16px; margin-bottom: 20px;">תודה רבה שבחרת בנו! נחזור אליך בהקדם עם עדכון על ההזמנה.</p>
+        <p style="color: #555; font-size: 16px; margin-bottom: 30px;">תודה על הזמנתך! קיבלנו את ההזמנה שלך. הנה הפרטים:</p>
+${buildOrderSummaryBlock(order, packageName)}
+        <p style="color: #555; font-size: 16px; margin-bottom: 20px;">
+          <strong>שים לב:</strong> ההזמנה ממתינה לתשלום. לאחר השלמת התשלום ההזמנה תאושר ותקבל הודעה נוספת.
+        </p>
 
         <p style="color: #999; font-size: 14px; text-align: center; margin-top: 30px;">בברכה,<br/>צוות הקייטרינג</p>
       </div>
@@ -282,4 +342,23 @@ const buildOrderConfirmationHtml = (order, customerName) => {
   `;
 };
 
-module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getByCustomerId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange };
+// Email sent when an order becomes confirmed — payment received.
+const buildOrderConfirmedHtml = (order, customerName, packageName) => {
+  return `
+    <div style="direction: rtl; font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+      <div style="background-color: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333; text-align: center; margin-bottom: 30px;">ההזמנה שלך אושרה!</h2>
+
+        <p style="color: #555; font-size: 16px; margin-bottom: 20px;">שלום <strong>${customerName}</strong>,</p>
+
+        <p style="color: #555; font-size: 16px; margin-bottom: 30px;">קיבלנו את התשלום עבור הזמנתך וההזמנה אושרה. הנה הפרטים:</p>
+${buildOrderSummaryBlock(order, packageName)}
+        <p style="color: #555; font-size: 16px; margin-bottom: 20px;">תודה רבה שבחרת בנו! נתראה באירוע.</p>
+
+        <p style="color: #999; font-size: 14px; text-align: center; margin-top: 30px;">בברכה,<br/>צוות הקייטרינג</p>
+      </div>
+    </div>
+  `;
+};
+
+module.exports = { getAllOrders, getById, getFullOrderDetails, getByUserId, getByCustomerId, createOrder, deleteOrder, updateOrder, updateOrderByCustomer, markOrderConfirmed, getOrderCountByUser, getTotalPaymentsByUser, getAverageOrderValue, getOrdersByDateRange, ORDER_STATUS_PENDING, ORDER_STATUS_APPROVED };

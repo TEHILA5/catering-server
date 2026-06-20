@@ -49,15 +49,10 @@ const updateOrderValidation = Joi.object({
     .optional()
     .messages({
       'number.min': 'Number of guests must be at least 1'
-    }),
-  isApproved: Joi.boolean()
-    .optional()
-    .messages({
-      'boolean.base': 'isApproved must be a boolean value'
     })
 });
 
-// Customers may not change isApproved — only admins can approve orders.
+// Customers may not change paymentStatus — only confirm-payment / PayPal can.
 const customerUpdateOrderValidation = Joi.object({
   packageId: Joi.string()
     .optional(),

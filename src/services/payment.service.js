@@ -1,12 +1,13 @@
 const { client, checkoutSdk } = require('../config/paypal.config');
 const Order = require('../models/Order');
+const orderService = require('./order.service');
 
 // PayPal supports ILS as a transaction currency, so we charge in shekels to match
 // the prices shown across the app (₪). Centralised here in case it ever changes.
 const CURRENCY = 'ILS';
 
-const PAYMENT_STATUS_PENDING = 'ממתין לאישור';
-const PAYMENT_STATUS_PAID = 'בוצע';
+const PAYMENT_STATUS_PENDING = orderService.ORDER_STATUS_PENDING;
+const PAYMENT_STATUS_PAID = orderService.ORDER_STATUS_APPROVED;
 
 /**
  * Creates a PayPal order for one of our internal orders.
@@ -57,7 +58,7 @@ const createPaypalOrder = async (orderId, userId) => {
 
 /**
  * Captures a previously approved PayPal order and, ONLY on a confirmed successful
- * capture, marks our internal order as paid ("בוצע").
+ * capture, marks our internal order as confirmed ("מאושר").
  *
  * @param {string} paypalOrderId  the PayPal order id returned by createPaypalOrder
  * @param {string} orderId        our internal Order _id
@@ -89,11 +90,13 @@ const capturePaypalOrder = async (paypalOrderId, orderId, userId) => {
     return { success: false, status: result?.status || 'FAILED', order };
   }
 
-  order.paymentStatus = PAYMENT_STATUS_PAID;
-  order.paypalCaptureId = capture.id;
-  await order.save();
+  // Confirm the order through the shared service so the status update and the
+  // "order confirmed" email happen in exactly one place.
+  const confirmedOrder = await orderService.markOrderConfirmed(orderId, {
+    paypalCaptureId: capture.id,
+  });
 
-  return { success: true, status: result.status, order };
+  return { success: true, status: result.status, order: confirmedOrder };
 };
 
 module.exports = {
