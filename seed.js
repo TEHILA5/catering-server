@@ -391,6 +391,7 @@ async function seed() {
         ];
         // חלוקה מעגלית של ההזמנות בין המשתמשים הקיימים
         const userId = realUsers[i % realUsers.length]._id;
+        const approved = i % 2 === 0;
         return {
           userId,
           packageId:      pkg._id,
@@ -399,7 +400,7 @@ async function seed() {
           eventDate:      new Date(Date.now() + (i + 1) * 14 * 24 * 60 * 60 * 1000),
           address:        sampleAddresses[i],
           totalPrice:     guests * pkg.pricePerPerson,
-          isApproved:     i % 2 === 0,
+          paymentStatus:  approved ? 'מאושר' : 'ממתין לתשלום',
         };
       });
 

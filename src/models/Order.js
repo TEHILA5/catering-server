@@ -10,13 +10,13 @@ const orderSchema = new mongoose.Schema({
   // Price snapshot: the amount actually charged at order time.
   // Kept on the order so it stays accurate even if the package price changes later.
   totalPrice: { type: Number, required: true },
-  isApproved: { type: Boolean, default: false },
-  // Payment lifecycle. Starts pending; flips to "בוצע" ONLY after PayPal confirms
-  // a successful server-side capture (never trusted from the frontend).
+  // Order status. Starts "ממתין לתשלום"; flips to "מאושר" once payment is
+  // confirmed — either by a successful server-side PayPal capture (never trusted
+  // from the frontend) or by an admin manually marking it paid (cash / transfer).
   paymentStatus: {
     type: String,
-    enum: ['ממתין לאישור', 'בוצע'],
-    default: 'ממתין לאישור'
+    enum: ['ממתין לתשלום', 'מאושר'],
+    default: 'ממתין לתשלום'
   },
   // PayPal references kept for traceability / reconciliation.
   paypalOrderId: { type: String },

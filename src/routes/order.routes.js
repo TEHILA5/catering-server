@@ -9,26 +9,23 @@ const router = express.Router();
 // Admin: all orders
 router.get('/', verifyToken, requireAdmin, orderController.getAllOrders);
 
-// PART 2 routes - must be before /:orderId to avoid route matching conflicts
+// Static / multi-segment paths must be registered before /:orderId to avoid conflicts.
 router.get('/user/count', verifyToken, orderController.getOrderCountByUser);
 router.get('/user/total', verifyToken, orderController.getTotalPaymentsByUser);
 router.get('/stats/average', verifyToken, orderController.getAverageOrderValue);
 router.get('/by-date-range', verifyToken, validate(dateRangeValidation, 'query'), orderController.getOrdersByDateRange);
+router.get('/user/orders', verifyToken, orderController.getByUserId);
+router.get('/customer/:customerId', verifyToken, requireAdmin, orderController.getOrdersByCustomer);
 router.get('/:orderId/full-details', verifyToken, orderController.getFullOrderDetails);
 
-router.get('/user/orders', verifyToken, orderController.getByUserId);
-
-// Admin: orders of a specific customer
-router.get('/customer/:customerId', verifyToken, requireAdmin, orderController.getOrdersByCustomer);
-router.get('/:orderId', verifyToken, orderController.getById);
 router.post('/', verifyToken, validate(createOrderValidation, 'body'), orderController.createOrder);
 
-router.delete('/:orderId', verifyToken, orderController.deleteOrder);
-
-// Customer edit must be registered before /:orderId so Express matches the full path.
+// Sub-paths on /:orderId — register before bare /:orderId handlers.
+router.patch('/:orderId/confirm-payment', verifyToken, requireAdmin, orderController.confirmPayment);
 router.put('/:orderId/edit', verifyToken, validate(customerUpdateOrderValidation, 'body'), orderController.updateOrderByCustomer);
 
-// Admin: full update including approval status.
+router.get('/:orderId', verifyToken, orderController.getById);
 router.put('/:orderId', verifyToken, requireAdmin, validate(updateOrderValidation, 'body'), orderController.updateOrder);
+router.delete('/:orderId', verifyToken, orderController.deleteOrder);
 
 module.exports = router;
