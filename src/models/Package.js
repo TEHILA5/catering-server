@@ -19,6 +19,12 @@ const packageSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  minGuests: {
+    type: Number,
+    required: true,
+    default: 1,
+    min: 1
+  },
   limits: {
     starters: {
       type: Number,

@@ -65,6 +65,7 @@ const createOrder = async (data) => {
   ensureEventDateNotInPast(eventDate);
 
   await validateSelectionAgainstLimits(selectedItems, selectedPackage.limits);
+  validateGuestCount(selectedPackage, numberOfGuests);
 
   // Price snapshot computed on the server, never trusted from the client.
   const totalPrice = selectedPackage.pricePerPerson * numberOfGuests;
@@ -123,6 +124,15 @@ const ensureEventDateNotInPast = (eventDate) => {
   }
 };
 
+const validateGuestCount = (pkg, numberOfGuests) => {
+  const min = pkg.minGuests ?? 1;
+  if (numberOfGuests < min) {
+    throw new Error(
+      `מספר האורחים חייב להיות לפחות ${min} עבור חבילת "${pkg.packageName}"`
+    );
+  }
+};
+
 const validateSelectionAgainstLimits = async (selectedItemIds, limits) => {
   if (!selectedItemIds.length) return;
 
@@ -171,6 +181,7 @@ const updateOrder = async (orderId, data) => {
     if (data.packageId || data.selectedItems !== undefined) {
       await validateSelectionAgainstLimits(items, pkg.limits);
     }
+    validateGuestCount(pkg, targetGuests);
     updateData.totalPrice = pkg.pricePerPerson * targetGuests;
   }
 
@@ -205,6 +216,7 @@ const updateOrderByCustomer = async (orderId, userId, data) => {
     if (data.packageId || data.selectedItems !== undefined) {
       await validateSelectionAgainstLimits(items, pkg.limits);
     }
+    validateGuestCount(pkg, targetGuests);
     updateData.totalPrice = pkg.pricePerPerson * targetGuests;
   }
 

@@ -291,6 +291,7 @@ const packagesData = [
     description: 'חבילה משתלמת לאירועים קטנים — ארוחת שבת משפחתית או אירוע אינטימי. מעט מנות, מספיק ל-20–40 אורחים.',
     imageUrl: u('1504674900247-0877df9cc836'), // colorful food spread on table
     pricePerPerson: 89,
+    minGuests: 20,
     limits: { starters: 1, mainCourses: 2, salads: 5, desserts: 2, breads: 2, drinks: 3 },
     featured: false,
   },
@@ -299,6 +300,7 @@ const packagesData = [
     description: 'מנגל ויום הולדת — קבב, פרגית ותוספות. מבחר נוח לאירוע חוץ או חגיגה משפחתית.',
     imageUrl: u('1529694157872-4e0c0f3b238b'), // kebab skewers on hot grill
     pricePerPerson: 139,
+    minGuests: 15,
     limits: { starters: 2, mainCourses: 2, salads: 6, desserts: 3, breads: 3, drinks: 4 },
     featured: true,
   },
@@ -307,6 +309,7 @@ const packagesData = [
     description: 'ארוחת שף יוקרתית — פחות כמות, יותר איכות. מתאים לערב VIP או אירוע עסקי מיוחד.',
     imageUrl: u('1546964124-0cce460f38ef'), // premium gourmet steak on plate
     pricePerPerson: 199,
+    minGuests: 10,
     limits: { starters: 2, mainCourses: 3, salads: 6, desserts: 3, breads: 2, drinks: 4 },
     featured: true,
   },
@@ -315,6 +318,7 @@ const packagesData = [
     description: 'החבילה המושלמת לחתונה — מבחר עשיר אך ממוקד, בדיוק כמו שעושים באירועים גדולים.',
     imageUrl: u('1476224203421-9ac39bcb3b28'), // festive banquet food display
     pricePerPerson: 249,
+    minGuests: 80,
     limits: { starters: 2, mainCourses: 3, salads: 10, desserts: 4, breads: 3, drinks: 6 },
     featured: true,
   },
@@ -323,6 +327,7 @@ const packagesData = [
     description: 'פגישת עסקים או ארוחת צהריים במשרד — מנה עיקרית אחת, מעט סלטים, בלי בזבוז זמן.',
     imageUrl: u('1414235077428-338989a2e8c0'), // plated business lunch dish
     pricePerPerson: 75,
+    minGuests: 5,
     limits: { starters: 1, mainCourses: 1, salads: 4, desserts: 1, breads: 2, drinks: 3 },
     featured: false,
   },
@@ -331,6 +336,7 @@ const packagesData = [
     description: 'חגיגה משפחתית — כמעט ברמת חתונה, עם מעט פחות משקאות. מבחר עשיר לכל הגילאים.',
     imageUrl: u('1555939594-58d7cb561ad1'), // grilled meat platter
     pricePerPerson: 159,
+    minGuests: 30,
     limits: { starters: 2, mainCourses: 3, salads: 8, desserts: 4, breads: 3, drinks: 5 },
     featured: false,
   },

@@ -16,6 +16,11 @@ const packageSchema = Joi.object({
     'number.base': 'Price per person must be a number',
     'number.positive': 'Price per person must be greater than 0'
   }),
+  minGuests: Joi.number().integer().min(1).default(1).messages({
+    'number.base': 'Minimum guests must be a number',
+    'number.integer': 'Minimum guests must be a whole number',
+    'number.min': 'Minimum guests must be at least 1'
+  }),
   limits: Joi.object({
     starters: Joi.number().integer().min(0).max(10).messages({
       'number.min': 'Starters limit cannot be negative',
