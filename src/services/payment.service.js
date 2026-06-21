@@ -50,8 +50,9 @@ const createPaypalOrder = async (orderId, userId) => {
   const paypalOrderId = response.result.id;
 
   // Persist the PayPal reference so capture can be validated against it later.
-  order.paypalOrderId = paypalOrderId;
-  await order.save();
+  // Use findByIdAndUpdate to avoid re-validating stale enum values that may exist
+  // on documents created before a schema enum change.
+  await Order.findByIdAndUpdate(order._id, { paypalOrderId });
 
   return { paypalOrderId };
 };
@@ -82,16 +83,12 @@ const capturePaypalOrder = async (paypalOrderId, orderId, userId) => {
   const response = await client.execute(request);
   const result = response.result;
 
-  // The capture is only trustworthy when PayPal itself reports COMPLETED.
   const capture = result?.purchase_units?.[0]?.payments?.captures?.[0];
   const isCompleted = result?.status === 'COMPLETED' && capture?.status === 'COMPLETED';
 
   if (!isCompleted) {
     return { success: false, status: result?.status || 'FAILED', order };
   }
-
-  // Confirm the order through the shared service so the status update and the
-  // "order confirmed" email happen in exactly one place.
   const confirmedOrder = await orderService.markOrderConfirmed(orderId, {
     paypalCaptureId: capture.id,
   });

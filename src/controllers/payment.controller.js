@@ -13,7 +13,6 @@ const responseHandler = require('../utils/responseHandler');
  * @param {Error}  error    the thrown SDK / app error
  */
 const logPaypalError = (context, error) => {
-  // PayPal SDK HttpError carries the upstream HTTP status here.
   const statusCode = error?.statusCode;
 
   // error.message is usually a JSON string from PayPal — try to pretty-print it

@@ -59,6 +59,9 @@ const createReview = async (data) => {
   if (order.userId.toString() !== userId.toString()) {
     throw new Error('Unauthorized: you can only review your own orders');
   }
+  if (order.paymentStatus !== 'מאושר') {
+    throw new Error('ניתן לכתוב חוות דעת רק לאחר ביצוע תשלום והאשרת ההזמנה');
+  }
 
   const existing = await Review.findOne({ orderId });
   if (existing) throw new Error('A review already exists for this order');

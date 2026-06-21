@@ -13,7 +13,6 @@ const emailConfig = {
 
 const transporter = nodemailer.createTransport(emailConfig);
 
-// Verify transporter configuration
 transporter.verify((error, success) => {
   if (error) {
     console.error('✗ Email configuration error:', error.message);
