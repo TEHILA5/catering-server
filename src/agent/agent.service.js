@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 const dishService = require('../services/dish.service');
 const packageService = require('../services/package.service');
 const orderService = require('../services/order.service');
@@ -8,7 +8,7 @@ if (!process.env.GEMINI_API_KEY) {
   console.error('[Agent] Missing GEMINI_API_KEY in environment (.env). Agent chat will not work.');
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_INSTRUCTION = `אתה עוזר AI של שירות הקייטרינג "קייטרינג המלך".
 תפקידך לעזור ללקוחות לגלות מנות וחבילות קייטרינג, לבצע ולצפות בהזמנות, ולענות על כל שאלה הקשורה לשירות.
@@ -246,27 +246,28 @@ const normalizeHistory = (history) => {
 
 /**
  * שולח הודעה למודל עם ניסיונות חוזרים וגיבוי בין מודלים.
- * @returns {Promise<import('@google/generative-ai').ChatSession>}
+ * @returns {Promise<{ chatSession: import('@google/genai').Chat, response: import('@google/genai').GenerateContentResponse }>}
  */
 const sendWithFallback = async (systemInstruction, userMessage, history = []) => {
   let lastError;
 
   for (const modelName of MODEL_FALLBACKS) {
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-      systemInstruction,
-      tools: TOOLS,
-    });
-
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         // Seed the session with the full prior conversation so the model
         // "remembers" earlier details (package, guests, date, address) instead
         // of re-asking. Previously this was always `history: []`, which is what
         // made every turn behave like a brand-new conversation.
-        const chatSession = model.startChat({ history });
-        const result = await chatSession.sendMessage(userMessage);
-        return { chatSession, response: result.response };
+        const chatSession = ai.chats.create({
+          model: modelName,
+          config: {
+            systemInstruction,
+            tools: TOOLS,
+          },
+          history,
+        });
+        const response = await chatSession.sendMessage({ message: userMessage });
+        return { chatSession, response };
       } catch (error) {
         lastError = error;
         console.error(
@@ -327,7 +328,7 @@ const chat = async (userMessage, context = {}) => {
 
   // לולאת כלים: מאפשרת getPackages ואז createOrder באותה בקשה.
   while (true) {
-    const functionCalls = currentResponse.functionCalls();
+    const functionCalls = currentResponse.functionCalls;
     if (!functionCalls || functionCalls.length === 0) break;
 
     const modelCallParts = functionCalls.map((call) => ({
@@ -354,11 +355,10 @@ const chat = async (userMessage, context = {}) => {
 
     historyTurns.push({ role: 'function', parts: toolResponseParts });
 
-    const nextResult = await chatSession.sendMessage(toolResponseParts);
-    currentResponse = nextResult.response;
+    currentResponse = await chatSession.sendMessage({ message: toolResponseParts });
   }
 
-  const reply = currentResponse.text() || '';
+  const reply = currentResponse.text || '';
   if (reply.trim()) {
     historyTurns.push({ role: 'model', parts: [{ text: reply }] });
   }
