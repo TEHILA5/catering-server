@@ -182,7 +182,6 @@ const getOrdersByDateRange = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-    // Validate dates
     if (!startDate || !endDate) {
       return responseHandler.error(res, 'Both startDate and endDate are required', 400);
     }
